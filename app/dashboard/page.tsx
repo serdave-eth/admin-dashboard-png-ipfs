@@ -94,26 +94,55 @@ export default function Dashboard() {
                   
                   {zoraCoins.length > 0 ? (
                     <div className="space-y-4">
-                      <p className="text-gray-600">Found {zoraCoins.length} coin balance(s):</p>
+                      <p className="text-gray-600">Found {zoraCoins.length} coin(s) where you are an owner:</p>
                       {zoraCoins.map((balance, index) => (
-                        <div key={balance.id || index} className="border rounded-lg p-4 bg-gray-50">
+                        <div key={balance.id || index} className="border rounded-lg p-4 bg-green-50 border-green-200">
                           <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-semibold">
-                                {balance.coin?.name || 'Unknown Coin'}
-                              </h3>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-semibold text-green-800">
+                                  {balance.coin?.name || 'Unknown Coin'}
+                                </h3>
+                                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                                  Owner
+                                </span>
+                              </div>
                               {balance.coin?.symbol && (
                                 <p className="text-sm text-gray-600">({balance.coin.symbol})</p>
+                              )}
+                              {balance.coin?.address && (
+                                <p className="text-xs text-gray-500 font-mono break-all">
+                                  Contract: {balance.coin.address}
+                                </p>
                               )}
                               {balance.coin?.description && (
                                 <p className="text-sm text-gray-500 mt-1">{balance.coin.description.replace(/"/g, '&quot;')}</p>
                               )}
                             </div>
-                            <div className="text-right">
-                              <p className="font-medium">Balance: {balance.balance}</p>
+                            <div className="text-right ml-4">
+                              <div className="text-right">
+                                <p className="font-medium text-green-800">
+                                  Balance: {balance.balanceDecimal ? balance.balanceDecimal.toLocaleString(undefined, { maximumFractionDigits: 6 }) : balance.balance}
+                                </p>
+                                {balance.balanceDecimal && balance.balance !== balance.balanceDecimal.toString() && (
+                                  <p className="text-xs text-gray-500">
+                                    Raw: {parseInt(balance.balance).toLocaleString()}
+                                  </p>
+                                )}
+                                {balance.decimals && (
+                                  <p className="text-xs text-gray-500">
+                                    Decimals: {balance.decimals}
+                                  </p>
+                                )}
+                              </div>
                               {balance.coin?.marketCap && (
                                 <p className="text-sm text-gray-600">
                                   Market Cap: ${parseFloat(balance.coin.marketCap).toLocaleString()}
+                                </p>
+                              )}
+                              {balance.coin?.uniqueHolders && (
+                                <p className="text-sm text-gray-600">
+                                  Holders: {balance.coin.uniqueHolders}
                                 </p>
                               )}
                             </div>
@@ -122,7 +151,10 @@ export default function Dashboard() {
                       ))}
                     </div>
                   ) : !isLoadingCoins && !coinsError ? (
-                    <div className="text-gray-500">No coins found. Click &quot;Refresh Coins&quot; to check for balances.</div>
+                    <div className="text-gray-500">
+                      <p>No coins found where you are an owner.</p>
+                      <p className="text-sm mt-1">This means the Zora smart wallet is not in the owners array for any of the coins you have balances in.</p>
+                    </div>
                   ) : null}
                 </div>
               )}
