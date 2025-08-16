@@ -91,18 +91,18 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-lg font-semibold mb-4">Upload File</h2>
+    <div className="bg-white rounded-lg shadow-md p-8">
+      <h2 className="text-xl font-bold mb-6">Upload File</h2>
       
       {!file ? (
         <FileDropzone onFileSelect={handleFileSelect} />
       ) : (
         <div className="space-y-4">
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="font-medium text-gray-900">{file.name}</p>
-                <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+                <p className="text-base font-semibold text-gray-900">{file.name}</p>
+                <p className="text-sm text-gray-600">{formatFileSize(file.size)}</p>
               </div>
               {!uploading && (
                 <button
@@ -122,7 +122,7 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{uploadProgress}% uploaded</p>
+                <p className="text-sm font-medium text-gray-700 mt-2">{uploadProgress}% uploaded</p>
               </div>
             )}
           </div>
@@ -130,7 +130,7 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
           <button
             onClick={handleUpload}
             disabled={uploading}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white px-6 py-4 rounded-lg font-semibold text-base transition-colors"
           >
             {uploading ? (
               <>

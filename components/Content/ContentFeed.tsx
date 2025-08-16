@@ -80,8 +80,8 @@ export default function ContentFeed({ refreshTrigger }: { refreshTrigger: number
   if (items.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 mb-2">No content uploaded yet</p>
-        <p className="text-sm text-gray-400">Upload your first file to get started</p>
+        <p className="text-lg font-medium text-gray-600 mb-3">No content uploaded yet</p>
+        <p className="text-base text-gray-500">Upload your first file to get started</p>
       </div>
     );
   }

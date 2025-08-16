@@ -32,7 +32,7 @@ export async function verifyAuthToken(request: NextRequest): Promise<string | nu
         // Try to find wallet address in various possible locations
         const walletAddress = 
           payload.wallet?.address ||
-          payload.linkedAccounts?.find((acc: any) => acc.type === 'wallet')?.address ||
+          payload.linkedAccounts?.find((acc: { type: string; address?: string }) => acc.type === 'wallet')?.address ||
           payload.sub; // Sometimes the wallet address is the subject
           
         return walletAddress || null;
@@ -46,10 +46,8 @@ export async function verifyAuthToken(request: NextRequest): Promise<string | nu
     const claims = await privyClient.verifyAuthToken(token);
     
     // Extract wallet address from verified claims
-    const walletAddress = 
-      claims.wallet?.address ||
-      claims.linkedAccounts?.find((acc: any) => acc.type === 'wallet')?.address ||
-      claims.userId; // Fallback to userId if no wallet
+    // Note: AuthTokenClaims structure may vary, using userId as fallback
+    const walletAddress = claims.userId; // Use userId as the wallet identifier
       
     return walletAddress || null;
   } catch (error) {

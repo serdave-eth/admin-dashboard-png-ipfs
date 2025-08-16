@@ -34,7 +34,7 @@ export default function FileDropzone({ onFileSelect }: FileDropzoneProps) {
     <div
       onDrop={handleDrop}
       onDragOver={handleDragOver}
-      className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-500 transition-colors cursor-pointer"
+      className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-indigo-500 transition-colors cursor-pointer"
     >
       <input
         type="file"
@@ -45,10 +45,10 @@ export default function FileDropzone({ onFileSelect }: FileDropzoneProps) {
       />
       <label htmlFor="file-upload" className="cursor-pointer">
         <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600 mb-2">
+        <p className="text-lg font-medium text-gray-700 mb-3">
           Drag and drop your file here, or click to browse
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-base text-gray-600 font-medium">
           PNG images only, up to 100MB
         </p>
       </label>
