@@ -20,6 +20,8 @@ model Content {
   fileType          String   @map("file_type")
   fileSize          BigInt   @map("file_size")
   ipfsCid           String   @unique @map("ipfs_cid")
+  coinContractAddress String? @map("coin_contract_address")
+  minimumTokenAmount String? @map("minimum_token_amount")
   createdAt         DateTime @default(now()) @map("created_at")
 
   @@index([userWalletAddress])

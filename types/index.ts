@@ -5,6 +5,8 @@ export interface ContentItem {
   fileType: string;
   fileSize: bigint;
   ipfsCid: string;
+  coinContractAddress?: string | null;
+  minimumTokenAmount?: string | null;
   createdAt: Date;
 }
 

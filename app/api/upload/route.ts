@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const coinContractAddress = formData.get('coinContractAddress') as string;
+    const minimumTokenAmount = formData.get('minimumTokenAmount') as string;
 
     if (!file) {
       return NextResponse.json(
@@ -53,7 +55,15 @@ export async function POST(request: NextRequest) {
         fileType: file.type,
         fileSize: BigInt(size),
         ipfsCid: cid,
+        coinContractAddress: coinContractAddress || null,
+        minimumTokenAmount: minimumTokenAmount || null,
       },
+    });
+
+    console.log('Upload successful:', {
+      fileCid: cid,
+      coinContractAddress: coinContractAddress || 'None',
+      minimumTokenAmount: minimumTokenAmount || 'None'
     });
 
     return NextResponse.json({

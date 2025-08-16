@@ -45,6 +45,32 @@ export default function ContentCard({ item }: { item: ContentItem }) {
           <span className="text-gray-700">{item.fileType}</span>
         </div>
 
+        {/* Coin Requirements */}
+        {item.coinContractAddress && item.minimumTokenAmount && (
+          <div className="pt-2 border-t border-gray-100">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-gray-500 text-xs">Access Required:</span>
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                Token Gated
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 text-xs">Contract:</span>
+                <span className="font-mono text-xs text-gray-600 truncate max-w-24" title={item.coinContractAddress}>
+                  {item.coinContractAddress.slice(0, 6)}...{item.coinContractAddress.slice(-4)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 text-xs">Min Amount:</span>
+                <span className="text-xs text-gray-700 font-medium">
+                  {parseFloat(item.minimumTokenAmount).toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="pt-2 border-t border-gray-100">
           <div className="flex items-center justify-between mb-2">
             <span className="text-gray-500 text-xs">IPFS CID:</span>
