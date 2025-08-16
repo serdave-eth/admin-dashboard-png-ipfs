@@ -9,6 +9,7 @@ import { ContentItem } from '@/types';
 import CreatorAvatar from '@/components/UI/CreatorAvatar';
 import Image from 'next/image';
 import { Heart, Eye, Lock, Download } from 'lucide-react';
+import { usePrivy } from '@privy-io/react-auth';
 
 export default function CreatorPage() {
   const params = useParams();
@@ -24,61 +25,65 @@ export default function CreatorPage() {
   const coinAddress = params.id as string;
   const { getCreatorById } = useZoraCreators();
   const { zoraCoins, isLoadingCoins } = useZoraLinking();
+  const { authenticated, login } = usePrivy();
   const userBalance = creator?.userBalanceDecimal || 0;
 
   // Fetch creator data
   useEffect(() => {
-    // Wait for zoraCoins to be loaded
-    if (isLoadingCoins) {
-      return;
-    }
-
     const fetchCreator = async () => {
       setIsLoadingCreator(true);
       try {
         console.log('Fetching creator for coin address:', coinAddress);
+        console.log('Authenticated:', authenticated);
         console.log('Available zoraCoins:', zoraCoins);
         
-        // First try to get creator from existing zoraCoins data
-        const existingCreator = zoraCoins.find(coin => coin.coin?.address === coinAddress);
-        console.log('Existing creator found:', existingCreator);
+        // If authenticated and zoraCoins are loaded, check for existing data first
+        if (authenticated && !isLoadingCoins) {
+          const existingCreator = zoraCoins.find(coin => coin.coin?.address === coinAddress);
+          console.log('Existing creator found:', existingCreator);
+          
+          if (existingCreator?.coin) {
+            // Use existing data from dashboard with user balance
+            const creatorData: ZoraCreatorData = {
+              id: existingCreator.coin.address || '',
+              coinAddress: existingCreator.coin.address || '',
+              name: existingCreator.coin.name || 'Unknown Creator',
+              symbol: existingCreator.coin.symbol || 'UNKNOWN',
+              description: existingCreator.coin.description || 'Creator on Zora',
+              profileImage: existingCreator.coin.mediaContent?.previewImage?.medium || 
+                           existingCreator.coin.mediaContent?.previewImage?.small || 
+                           `/api/placeholder/150/150`,
+              totalSupply: existingCreator.coin.totalSupply || '0',
+              marketCap: existingCreator.coin.marketCap || '0',
+              uniqueHolders: existingCreator.coin.uniqueHolders || 0,
+              volume24h: existingCreator.coin.volume24h || '0',
+              price: existingCreator.coin.marketCap && existingCreator.coin.totalSupply ? 
+                     parseFloat(existingCreator.coin.marketCap) / parseFloat(existingCreator.coin.totalSupply) : 0,
+              userBalance: existingCreator.balance || '0',
+              userBalanceDecimal: existingCreator.balanceDecimal || 0,
+              decimals: existingCreator.decimals || 18,
+              creatorAddress: existingCreator.coin.creatorAddress,
+              mediaContent: existingCreator.coin.mediaContent,
+            };
+            
+            console.log('Created creator data from existing coins:', creatorData);
+            setCreator(creatorData);
+            return;
+          }
+        }
         
-        if (existingCreator?.coin) {
-          // Use existing data from dashboard
-          const creatorData: ZoraCreatorData = {
-            id: existingCreator.coin.address || '',
-            coinAddress: existingCreator.coin.address || '',
-            name: existingCreator.coin.name || 'Unknown Creator',
-            symbol: existingCreator.coin.symbol || 'UNKNOWN',
-            description: existingCreator.coin.description || 'Creator on Zora',
-            profileImage: existingCreator.coin.mediaContent?.previewImage?.medium || 
-                         existingCreator.coin.mediaContent?.previewImage?.small || 
-                         `/api/placeholder/150/150`,
-            totalSupply: existingCreator.coin.totalSupply || '0',
-            marketCap: existingCreator.coin.marketCap || '0',
-            uniqueHolders: existingCreator.coin.uniqueHolders || 0,
-            volume24h: existingCreator.coin.volume24h || '0',
-            price: existingCreator.coin.marketCap && existingCreator.coin.totalSupply ? 
-                   parseFloat(existingCreator.coin.marketCap) / parseFloat(existingCreator.coin.totalSupply) : 0,
-            userBalance: existingCreator.balance || '0',
-            userBalanceDecimal: existingCreator.balanceDecimal || 0,
-            decimals: existingCreator.decimals || 18,
-            creatorAddress: existingCreator.coin.creatorAddress,
-            mediaContent: existingCreator.coin.mediaContent,
-          };
-          
-          console.log('Created creator data from existing coins:', creatorData);
+        // Fallback to API call for basic creator info (works for both authenticated and unauthenticated)
+        console.log('Fetching creator data from API...');
+        const creatorData = await getCreatorById(coinAddress);
+        console.log('API creator data:', creatorData);
+        
+        if (creatorData) {
+          // If not authenticated, ensure user balance is 0
+          if (!authenticated) {
+            creatorData.userBalance = '0';
+            creatorData.userBalanceDecimal = 0;
+          }
           setCreator(creatorData);
-          
-          // Real content will be fetched separately via API
-        } else {
-          console.log('No existing creator found, falling back to API call');
-          // Fallback to API call if not found in existing data
-          const creatorData = await getCreatorById(coinAddress);
-          console.log('API creator data:', creatorData);
-          setCreator(creatorData);
-          
-          // Real content will be fetched separately via API
         }
       } catch (error) {
         console.error('Failed to fetch creator:', error);
@@ -90,7 +95,7 @@ export default function CreatorPage() {
     if (coinAddress) {
       fetchCreator();
     }
-  }, [coinAddress, getCreatorById, zoraCoins, isLoadingCoins]);
+  }, [coinAddress, getCreatorById, zoraCoins, isLoadingCoins, authenticated]);
 
   // Fetch real content from database
   const fetchContent = useCallback(async (cursor?: string) => {
@@ -156,14 +161,14 @@ export default function CreatorPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [loadMore]);
 
-  if (isLoadingCreator || isLoadingCoins) {
+  if (isLoadingCreator || (authenticated && isLoadingCoins)) {
     return (
       <div className="min-h-screen" style={{backgroundColor: '#F6CA46'}}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black mb-4"></div>
             <p className="text-black font-bold">
-              {isLoadingCoins ? 'Loading creator coins...' : 'Loading creator information...'}
+              {(authenticated && isLoadingCoins) ? 'Loading your coin balances...' : 'Loading creator information...'}
             </p>
           </div>
         </div>
@@ -246,7 +251,12 @@ export default function CreatorPage() {
                 <div className="bg-black/10 rounded-xl p-3 border border-black/20">
                   <p className="text-black/70 text-xs uppercase tracking-wider">Market Cap</p>
                   <p className="text-black font-bold text-xl">
-                    ${creator.marketCap ? (parseFloat(creator.marketCap) / 1000).toFixed(0) + 'K' : '0'}
+                    {creator.marketCap ? (() => {
+                      const mcap = parseFloat(creator.marketCap);
+                      if (mcap >= 1000000) return `$${(mcap / 1000000).toFixed(1)}M`;
+                      if (mcap >= 1000) return `$${(mcap / 1000).toFixed(0)}K`;
+                      return `$${mcap.toFixed(0)}`;
+                    })() : '$0'}
                   </p>
                 </div>
                 <div className="bg-black/10 rounded-xl p-3 border border-black/20">
@@ -256,7 +266,14 @@ export default function CreatorPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:justify-start">
-                {userBalance > 0 ? (
+                {!authenticated ? (
+                  <button 
+                    onClick={login}
+                    className="bg-blue-100 border border-blue-600/30 rounded-full px-6 py-3 hover:bg-blue-200 transition-colors"
+                  >
+                    <p className="text-blue-700 font-bold">Login to check ownership</p>
+                  </button>
+                ) : userBalance > 0 ? (
                   <div className="bg-green-100 border border-green-600/30 rounded-full px-6 py-3">
                     <p className="text-green-700 font-bold flex items-center gap-2">
                       <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
