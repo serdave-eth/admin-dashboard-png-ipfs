@@ -3,18 +3,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useZoraCreators, ZoraCreatorData, ZoraContent } from '@/lib/hooks/useZoraCreators';
+import { useZoraCreators, ZoraCreatorData } from '@/lib/hooks/useZoraCreators';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
-import CreatorContentCard from '@/components/Content/CreatorContentCard';
+import { ContentItem } from '@/types';
 import CreatorAvatar from '@/components/UI/CreatorAvatar';
+import Image from 'next/image';
+import { Heart, Eye, Lock, Download } from 'lucide-react';
 
 export default function CreatorPage() {
   const params = useParams();
-  const [contents, setContents] = useState<ZoraContent[]>([]);
-  const [displayedContents, setDisplayedContents] = useState<ZoraContent[]>([]);
+  const [contents, setContents] = useState<ContentItem[]>([]);
+  const [displayedContents, setDisplayedContents] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
   const [creator, setCreator] = useState<ZoraCreatorData | null>(null);
   const [isLoadingCreator, setIsLoadingCreator] = useState(true);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   
   const coinAddress = params.id as string;
   const { getCreatorById } = useZoraCreators();
@@ -65,11 +70,7 @@ export default function CreatorPage() {
           console.log('Created creator data from existing coins:', creatorData);
           setCreator(creatorData);
           
-          // Create content based on actual creator data
-          const realContents = createRealContent(creatorData);
-          console.log('Generated real contents:', realContents);
-          setContents(realContents);
-          setDisplayedContents(realContents.slice(0, 9));
+          // Real content will be fetched separately via API
         } else {
           console.log('No existing creator found, falling back to API call');
           // Fallback to API call if not found in existing data
@@ -77,12 +78,7 @@ export default function CreatorPage() {
           console.log('API creator data:', creatorData);
           setCreator(creatorData);
           
-          if (creatorData) {
-            const realContents = createRealContent(creatorData);
-            console.log('Generated real contents from API:', realContents);
-            setContents(realContents);
-            setDisplayedContents(realContents.slice(0, 9));
-          }
+          // Real content will be fetched separately via API
         }
       } catch (error) {
         console.error('Failed to fetch creator:', error);
@@ -96,54 +92,58 @@ export default function CreatorPage() {
     }
   }, [coinAddress, getCreatorById, zoraCoins, isLoadingCoins]);
 
-  // Create real content based on creator data
-  const createRealContent = (creatorData: ZoraCreatorData): ZoraContent[] => {
-    console.log('Creating real content for creator:', creatorData);
-    const contents: ZoraContent[] = [];
+  // Fetch real content from database
+  const fetchContent = useCallback(async (cursor?: string) => {
+    if (!coinAddress) return;
     
-    // Create content based on actual creator metrics
-    const contentCount = Math.min(20, Math.max(5, Math.floor((creatorData.uniqueHolders || 0) / 100) + 5));
-    console.log('Will create', contentCount, 'content pieces');
-    
-    for (let i = 1; i <= contentCount; i++) {
-      const isPremium = i > 3; // First 3 pieces are free, rest are premium
-      const requiredBalance = isPremium ? Math.max(1, Math.floor(i / 2)) : 0;
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        limit: '20'
+      });
       
-      const content: ZoraContent = {
-        id: `${creatorData.coinAddress}-content-${i}`,
-        title: `${creatorData.name} Exclusive Content #${i}`,
-        type: 'image' as const, // Default to image for now
-        thumbnail: creatorData.profileImage || `/api/placeholder/300/200`,
-        url: creatorData.profileImage || `/api/placeholder/800/600`,
-        description: `Exclusive content from ${creatorData.name} - ${isPremium ? 'Premium' : 'Free'} content piece #${i}`,
-        requiredBalance,
-        createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)).toISOString(),
-        likes: Math.floor((creatorData.uniqueHolders || 0) * 0.1) + i * 5,
-        views: Math.floor((creatorData.uniqueHolders || 0) * 0.3) + i * 10,
-        isPremium,
-        coinAddress: creatorData.coinAddress,
-        creatorAddress: creatorData.creatorAddress,
-      };
+      if (cursor) {
+        params.append('cursor', cursor);
+      }
       
-      contents.push(content);
-      console.log(`Created content ${i}:`, content);
+      const response = await fetch(`/api/content/creator/${coinAddress}?${params}`);
+      const data = await response.json();
+      
+      if (data.success !== false) {
+        const newContents = data.items || [];
+        
+        if (cursor) {
+          // Append to existing content
+          setContents(prev => [...prev, ...newContents]);
+          setDisplayedContents(prev => [...prev, ...newContents]);
+        } else {
+          // Replace content
+          setContents(newContents);
+          setDisplayedContents(newContents);
+        }
+        
+        setNextCursor(data.nextCursor);
+        setHasMore(data.hasMore);
+      }
+    } catch (error) {
+      console.error('Failed to fetch content:', error);
+    } finally {
+      setLoading(false);
+      setIsLoadingContent(false);
     }
+  }, [coinAddress]);
 
-    console.log('Final contents array:', contents);
-    return contents.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  };
+  // Fetch content when component mounts
+  useEffect(() => {
+    if (coinAddress) {
+      fetchContent();
+    }
+  }, [coinAddress, fetchContent]);
 
   const loadMore = useCallback(() => {
-    if (loading) return;
-    
-    setLoading(true);
-    setTimeout(() => {
-      const currentLength = displayedContents.length;
-      const nextBatch = contents.slice(currentLength, currentLength + 6);
-      setDisplayedContents(prev => [...prev, ...nextBatch]);
-      setLoading(false);
-    }, 500);
-  }, [loading, displayedContents.length, contents]);
+    if (loading || !hasMore || !nextCursor) return;
+    fetchContent(nextCursor);
+  }, [loading, hasMore, nextCursor, fetchContent]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -279,70 +279,152 @@ export default function CreatorPage() {
         <section>
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-4xl font-anton text-black mb-2 tracking-wide">EXCLUSIVE CONTENT</h2>
-              <p className="text-black/70">{contents.length} pieces of premium content</p>
-            </div>
-            <div className="flex gap-2">
-              <button className="bg-black/10 px-4 py-2 rounded-full text-sm font-medium text-black/70 hover:text-black transition-colors">
-                🆕 Latest
-              </button>
-              <button className="bg-black/10 px-4 py-2 rounded-full text-sm font-medium text-black/70 hover:text-black transition-colors">
-                🔥 Popular
-              </button>
+              <h2 className="text-4xl font-anton text-black mb-2 tracking-wide">CREATOR CONTENT</h2>
+              <p className="text-black/70">
+                {isLoadingContent ? 'Loading content...' : 
+                 contents.length === 0 ? 'No content available' : 
+                 `${contents.length} content ${contents.length === 1 ? 'item' : 'items'}`}
+              </p>
             </div>
           </div>
           
-          {userBalance < 10 && (
-            <div className="bg-orange-100 border border-orange-500/30 rounded-2xl p-6 mb-8">
+          {contents.length > 0 && (
+            <div className="bg-blue-100 border border-blue-500/30 rounded-2xl p-6 mb-8">
               <div className="flex items-start gap-4">
-                <span className="text-3xl">🔒</span>
+                <span className="text-3xl">📁</span>
                 <div>
-                  <h3 className="text-orange-700 font-bold text-lg mb-1">Unlock More Content</h3>
+                  <h3 className="text-blue-700 font-bold text-lg mb-1">Content Access</h3>
                   <p className="text-black/70">
-                    You need at least 10 ${creator.symbol} to unlock all content.
+                    Content access is determined by your ${creator.symbol} token balance and the minimum requirements set by the creator.
                     You currently have {userBalance.toFixed(2)} tokens.
                   </p>
-                  <div className="mt-3">
-                    <div className="bg-black/20 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-orange-500 to-red-500 h-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, (userBalance / 10) * 100)}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-black/60 mt-1">
-                      {Math.max(0, 10 - userBalance).toFixed(2)} more tokens needed
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayedContents.length > 0 ? (
-              displayedContents.map((content) => (
-                <CreatorContentCard
-                  key={content.id}
-                  content={content}
-                  isUnlocked={userBalance >= content.requiredBalance}
-                  userBalance={userBalance}
-                  coinAddress={creator.coinAddress}
-                />
-              ))
-            ) : (
-              <div className="col-span-full text-center py-12">
-                <p className="text-black/70 text-lg mb-2">No content available yet</p>
-                <p className="text-black/50 text-sm">Content will appear here once it's created</p>
-                <div className="mt-4 text-xs text-black/40">
-                  <p>Debug info:</p>
-                  <p>Contents array length: {contents.length}</p>
-                  <p>Displayed contents length: {displayedContents.length}</p>
-                  <p>Creator: {creator?.name}</p>
-                  <p>User balance: {userBalance}</p>
+          {isLoadingContent ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-black/10 rounded-2xl overflow-hidden border border-black/20 animate-pulse">
+                  <div className="aspect-video bg-black/20" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-black/20 rounded w-3/4" />
+                    <div className="h-3 bg-black/20 rounded w-full" />
+                    <div className="h-3 bg-black/20 rounded w-1/2" />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayedContents.length > 0 ? (
+                displayedContents.map((content) => {
+                  const requiredBalance = content.minimumTokenAmount ? parseFloat(content.minimumTokenAmount) : 0;
+                  const isUnlocked = userBalance >= requiredBalance;
+                  
+                  return (
+                    <div key={content.id} className="group bg-black/10 rounded-2xl overflow-hidden border border-black/20 hover:border-black/30 transition-all duration-300 hover:scale-105">
+                      {/* Content Preview */}
+                      <div className="relative aspect-video overflow-hidden">
+                        <Image
+                          src={`https://gateway.pinata.cloud/ipfs/${content.ipfsCid}`}
+                          alt={content.filename}
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-110"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/api/placeholder/300/200';
+                          }}
+                        />
+                        
+                        {/* Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        
+                        {/* Content Type Icon */}
+                        <div className="absolute top-3 left-3 bg-green-500 rounded-full p-2">
+                          <Download className="w-4 h-4 text-white" />
+                        </div>
+
+                        {/* Premium Badge */}
+                        {requiredBalance > 0 && (
+                          <div className="absolute top-3 right-3 bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-bold">
+                            PREMIUM
+                          </div>
+                        )}
+
+                        {/* Lock Overlay for locked content */}
+                        {!isUnlocked && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <div className="text-center">
+                              <Lock className="w-8 h-8 text-white mb-2 mx-auto" />
+                              <p className="text-white text-sm font-bold">
+                                {requiredBalance} tokens required
+                              </p>
+                              <p className="text-white/70 text-xs">
+                                You have {userBalance.toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* File Size in bottom corner */}
+                        <div className="absolute bottom-3 left-3 text-white text-xs bg-black/50 px-2 py-1 rounded">
+                          {(parseInt(content.fileSize) / (1024 * 1024)).toFixed(2)} MB
+                        </div>
+                      </div>
+
+                      {/* Content Info */}
+                      <div className="p-4">
+                        <h3 className="font-anton text-lg text-black mb-2 tracking-wide truncate">
+                          {content.filename.toUpperCase()}
+                        </h3>
+                        <p className="text-black/70 text-sm mb-3">
+                          {content.fileType.toUpperCase()} • {new Date(content.createdAt).toLocaleDateString()}
+                        </p>
+
+                        {/* Access Requirements */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            {isUnlocked ? (
+                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            ) : (
+                              <Lock className="w-3 h-3 text-black/50" />
+                            )}
+                            <span className="text-xs text-black/70">
+                              {isUnlocked ? 'Unlocked' : `${requiredBalance} tokens needed`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Action Button */}
+                        <button 
+                          className={`w-full py-2 px-4 rounded-full font-bold text-sm transition-all duration-200 ${
+                            isUnlocked 
+                              ? 'bg-black text-yellow-400 hover:scale-105' 
+                              : 'bg-black/20 text-black/50 cursor-not-allowed'
+                          }`}
+                          disabled={!isUnlocked}
+                          onClick={() => {
+                            if (isUnlocked) {
+                              window.open(`https://gateway.pinata.cloud/ipfs/${content.ipfsCid}`, '_blank');
+                            }
+                          }}
+                        >
+                          {isUnlocked ? 'View Content' : 'Locked'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-black/70 text-lg mb-2">No content available</p>
+                  <p className="text-black/50 text-sm">This creator hasn't uploaded any content yet</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {loading && (
             <div className="text-center py-8">
@@ -350,9 +432,20 @@ export default function CreatorPage() {
             </div>
           )}
 
-          {displayedContents.length >= contents.length && contents.length > 0 && (
+          {!loading && hasMore && contents.length > 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-400">You&apos;ve reached the end of the content</p>
+              <button 
+                onClick={loadMore}
+                className="bg-black text-yellow-400 px-6 py-3 rounded-full font-bold hover:scale-105 transition-all duration-200"
+              >
+                Load More Content
+              </button>
+            </div>
+          )}
+          
+          {!hasMore && contents.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-black/50">You've reached the end of the content</p>
             </div>
           )}
         </section>
