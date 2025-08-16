@@ -140,9 +140,15 @@ export default function Dashboard() {
                             )}
                             
                             <div className="mt-2 text-center">
-                              <span className="px-2 py-1 text-xs bg-green-600 text-white rounded-full font-bold">
-                                OWNER
-                              </span>
+                              {balance.isOwner ? (
+                                <span className="px-2 py-1 text-xs bg-green-600 text-white rounded-full font-bold">
+                                  🎨 CREATOR
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 text-xs bg-blue-600 text-white rounded-full font-bold">
+                                  💎 HOLDER
+                                </span>
+                              )}
                             </div>
                           </div>
                         </Link>
