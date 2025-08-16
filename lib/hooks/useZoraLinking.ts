@@ -3,10 +3,50 @@
 import { useState, useCallback, useEffect } from 'react';
 import { usePrivy, useCrossAppAccounts } from '@privy-io/react-auth';
 import { toast } from 'sonner';
+import { getProfileBalances } from '@zoralabs/coins-sdk';
 
 interface ZoraWallet {
   address: string;
   appId: string;
+  smartWallet?: string;
+}
+
+interface CoinBalance {
+  id: string;
+  balance: string;
+  coin?: {
+    id?: string;
+    name?: string;
+    description?: string;
+    address?: string;
+    symbol?: string;
+    totalSupply?: string;
+    totalVolume?: string;
+    volume24h?: string;
+    marketCap?: string;
+    marketCapDelta24h?: string;
+    uniqueHolders?: number;
+    createdAt?: string;
+    creatorAddress?: string;
+    tokenUri?: string;
+    mediaContent?: {
+      mimeType?: string;
+      originalUri?: string;
+      previewImage?: {
+        small?: string;
+        medium?: string;
+        blurhash?: string;
+      };
+    };
+    uniswapV4PoolKey?: {
+      token0Address?: string;
+      token1Address?: string;
+      fee?: number;
+      tickSpacing?: number;
+      hookAddress?: string;
+    };
+    uniswapV3PoolAddress?: string;
+  };
 }
 
 export interface UseZoraLinkingReturn {
@@ -18,6 +58,10 @@ export interface UseZoraLinkingReturn {
   zoraWallet: ZoraWallet | null;
   hasZoraLinked: boolean;
   clearError: () => void;
+  fetchZoraCoins: () => Promise<void>;
+  zoraCoins: CoinBalance[];
+  isLoadingCoins: boolean;
+  coinsError: string | null;
 }
 
 export const useZoraLinking = (): UseZoraLinkingReturn => {
@@ -28,6 +72,9 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
   const [isClearing, setIsClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [storedZoraWallet, setStoredZoraWallet] = useState<string | null>(null);
+  const [zoraCoins, setZoraCoins] = useState<CoinBalance[]>([]);
+  const [isLoadingCoins, setIsLoadingCoins] = useState(false);
+  const [coinsError, setCoinsError] = useState<string | null>(null);
 
   // Check if user has Zora account linked
   const zoraAccount = user?.linkedAccounts?.find(
@@ -40,15 +87,18 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     
     // Debug: log the zoraAccount structure
     console.log('Zora Account Data:', JSON.stringify(zoraAccount, null, 2));
+    console.log('Zora Smart Wallets:', zoraAccount.smartWallets);
     
     // Try multiple possible properties where the wallet address might be stored
-    const accountData = zoraAccount as any;
-    return accountData.address || 
-           accountData.walletAddress || 
-           accountData.wallet?.address ||
-           accountData.linkedAccountId ||
+    const accountData = zoraAccount as unknown as Record<string, unknown>;
+    const wallet = accountData.wallet as Record<string, unknown> | undefined;
+    
+    return (typeof accountData.address === 'string' ? accountData.address : null) || 
+           (typeof accountData.walletAddress === 'string' ? accountData.walletAddress : null) || 
+           (wallet && typeof wallet.address === 'string' ? wallet.address : null) ||
+           (typeof accountData.linkedAccountId === 'string' ? accountData.linkedAccountId : null) ||
            // If it's from our database, try to extract from subject
-           (accountData.subject && accountData.subject.includes('0x') ? 
+           (typeof accountData.subject === 'string' && accountData.subject.includes('0x') ? 
              accountData.subject.match(/0x[a-fA-F0-9]{40}/)?.[0] : null) ||
            null;
   };
@@ -84,7 +134,8 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
   const zoraWallet: ZoraWallet | null = zoraAccount ? {
     // Prefer the stored wallet address from database, fall back to detected address
     address: storedZoraWallet || zoraWalletAddress || 'Zora Account Linked (Address Not Available)',
-    appId: process.env.NEXT_PUBLIC_ZORA_APP_ID || 'clpgf04wn04hnkw0fv1m11mnb'
+    appId: process.env.NEXT_PUBLIC_ZORA_APP_ID || 'clpgf04wn04hnkw0fv1m11mnb',
+    smartWallet: zoraAccount.smartWallets?.[0]?.address || undefined
   } : null;
 
   const hasZoraLinked = Boolean(zoraWallet) || Boolean(zoraAccount);
@@ -211,6 +262,63 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     setError(null);
   }, []);
 
+  const fetchZoraCoins = useCallback(async () => {
+    if (!zoraWallet?.smartWallet) {
+      setCoinsError('No Zora smart wallet available');
+      return;
+    }
+
+    setIsLoadingCoins(true);
+    setCoinsError(null);
+
+    try {
+      let allBalances: CoinBalance[] = [];
+      let cursor: string | undefined = undefined;
+      const pageSize = 20;
+
+      // Continue fetching until no more pages
+      do {
+        const response = await getProfileBalances({
+          identifier: zoraWallet.smartWallet,
+          count: pageSize,
+          after: cursor,
+        });
+
+        const profile = response.data?.profile;
+
+        // Add balances to our collection
+        if (profile && profile.coinBalances?.edges) {
+          const balances = profile.coinBalances.edges.map(edge => edge.node);
+          allBalances = [...allBalances, ...balances];
+        }
+
+        // Update cursor for next page
+        cursor = profile?.coinBalances?.pageInfo?.endCursor;
+
+        // Break if no more results
+        if (!cursor || !profile?.coinBalances?.pageInfo?.hasNextPage) {
+          break;
+        }
+
+      } while (true);
+
+      setZoraCoins(allBalances);
+      console.log(`Fetched ${allBalances.length} total coin balances for Zora smart wallet:`, zoraWallet.smartWallet);
+      if (allBalances.length > 0) {
+        console.log('Sample coin balance:', allBalances[0]);
+      }
+    } catch (error: unknown) {
+      console.error('Failed to fetch Zora coins:', error);
+      let errorMessage = 'Failed to fetch Zora coins';
+      if (error instanceof Error && error.message) {
+        errorMessage = error.message;
+      }
+      setCoinsError(errorMessage);
+    } finally {
+      setIsLoadingCoins(false);
+    }
+  }, [zoraWallet?.smartWallet]);
+
   return {
     linkZora,
     clearZoraLink,
@@ -219,6 +327,10 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     error,
     zoraWallet,
     hasZoraLinked,
-    clearError
+    clearError,
+    fetchZoraCoins,
+    zoraCoins,
+    isLoadingCoins,
+    coinsError
   };
 };

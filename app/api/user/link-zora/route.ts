@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
         console.log('Linked accounts found:', linkedAccounts);
         
         // Try different ways to find the Zora account
-        const zoraAccount = linkedAccounts.find((account: any) => 
+        const zoraAccount = linkedAccounts.find((account: Record<string, unknown>) => 
           account.type === 'cross_app' || 
-          account.subject?.includes('zora') ||
+          (typeof account.subject === 'string' && account.subject?.includes('zora')) ||
           account.appId === (process.env.NEXT_PUBLIC_ZORA_APP_ID || 'clpgf04wn04hnkw0fv1m11mnb')
         );
         

@@ -14,11 +14,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch wallet linking information from database
-    const walletLink = await prisma.$queryRaw`
+    const walletLink = await prisma.$queryRaw<Array<{
+      zora_wallet_address: string;
+      linked_at: Date;
+    }>>`
       SELECT zora_wallet_address, linked_at 
       FROM wallet_links 
       WHERE primary_wallet_address = ${primaryWalletAddress}
-    ` as any[];
+    `;
 
     if (walletLink.length === 0) {
       return NextResponse.json({
