@@ -286,6 +286,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
 
   // Check if Zora smart wallet is an owner of a specific coin and get decimals
   const checkCoinOwnership = useCallback(async (coinAddress: string, zoraSmartWallet: string): Promise<{isOwner: boolean, decimals: number}> => {
+    console.log(`[Ownership Check] Starting check for coin ${coinAddress} with wallet ${zoraSmartWallet}`);
     try {
       // Connect to Base network using LlamaRPC
       const provider = new ethers.JsonRpcProvider('https://base.llamarpc.com');
@@ -294,28 +295,38 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
       const contract = new ethers.Contract(coinAddress, CONTRACT_ABI, provider);
       
       // Call the owners function and decimals function
+      console.log(`[Ownership Check] Calling contract.owners() and contract.decimals()...`);
       const [owners, decimals] = await Promise.all([
         contract.owners(),
         contract.decimals()
       ]);
       
+      console.log(`[Ownership Check] Owners array for ${coinAddress}:`, owners);
+      console.log(`[Ownership Check] Checking if ${zoraSmartWallet} is in owners array...`);
+      
       // Check if Zora smart wallet is in the owners array
       const isOwner = owners.includes(zoraSmartWallet);
       
-      console.log(`Coin ${coinAddress}: Zora wallet ${zoraSmartWallet} is owner: ${isOwner}, decimals: ${decimals}`);
+      console.log(`[Ownership Check] Result: Coin ${coinAddress}: Zora wallet ${zoraSmartWallet} is owner: ${isOwner}, decimals: ${decimals}`);
       return { isOwner, decimals: Number(decimals) };
     } catch (error) {
-      console.error(`Failed to check ownership for coin ${coinAddress}:`, error);
+      console.error(`[Ownership Check] ERROR - Failed to check ownership for coin ${coinAddress}:`, error);
+      console.error(`[Ownership Check] This coin will be excluded due to error. Returning isOwner: false`);
       return { isOwner: false, decimals: 18 }; // Default to 18 decimals on error
     }
   }, []);
 
   const fetchZoraCoins = useCallback(async () => {
+    console.log(`[Zora Coins Debug] ====== STARTING FETCH ZORA COINS ======`);
+    console.log(`[Zora Coins Debug] Zora Wallet:`, zoraWallet);
+    
     if (!zoraWallet?.smartWallet) {
+      console.error(`[Zora Coins Debug] ERROR: No Zora smart wallet available`);
       setCoinsError('No Zora smart wallet available');
       return;
     }
 
+    console.log(`[Zora Coins Debug] Using Smart Wallet: ${zoraWallet.smartWallet}`);
     setIsLoadingCoins(true);
     setCoinsError(null);
 
@@ -326,6 +337,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
 
       // Continue fetching until no more pages
       do {
+        console.log(`[Zora Coins Debug] Fetching page with cursor: ${cursor || 'initial'}`);
         const response = await getProfileBalances({
           identifier: zoraWallet.smartWallet,
           count: pageSize,
@@ -333,32 +345,54 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
         });
 
         const profile = response.data?.profile;
+        console.log(`[Zora Coins Debug] Profile response:`, profile);
 
         // Add balances to our collection
         if (profile && profile.coinBalances?.edges) {
           const balances = profile.coinBalances.edges.map(edge => edge.node);
+          console.log(`[Zora Coins Debug] Found ${balances.length} coins on this page`);
           allBalances = [...allBalances, ...balances];
         }
 
         // Update cursor for next page
         cursor = profile?.coinBalances?.pageInfo?.endCursor;
+        const hasNextPage = profile?.coinBalances?.pageInfo?.hasNextPage;
+        console.log(`[Zora Coins Debug] Has next page: ${hasNextPage}, Next cursor: ${cursor}`);
 
         // Break if no more results
-        if (!cursor || !profile?.coinBalances?.pageInfo?.hasNextPage) {
+        if (!cursor || !hasNextPage) {
           break;
         }
 
       } while (true);
 
+      // Log total fetched balances before filtering
+      console.log(`[Zora Coins Debug] ====== TOTAL FETCHED BALANCES: ${allBalances.length} ======`);
+      console.log(`[Zora Coins Debug] All fetched coins:`, allBalances.map(b => ({
+        name: b.coin?.name,
+        symbol: b.coin?.symbol,
+        address: b.coin?.address,
+        balance: b.balance
+      })));
+      
       // Filter coins to only show those where Zora smart wallet is an owner
-      console.log(`Checking ownership for ${allBalances.length} coins...`);
+      console.log(`[Zora Coins Debug] ====== CHECKING OWNERSHIP ======`);
+      console.log(`[Zora Coins Debug] Checking ownership for ${allBalances.length} coins...`);
       
       const filteredBalances: CoinBalance[] = [];
       
       for (let i = 0; i < allBalances.length; i++) {
         const balance = allBalances[i];
+        console.log(`[Zora Coins Debug] [${i + 1}/${allBalances.length}] Processing coin:`, {
+          name: balance.coin?.name,
+          symbol: balance.coin?.symbol,
+          address: balance.coin?.address,
+          balance: balance.balance,
+          hasAddress: !!balance.coin?.address
+        });
+        
         if (balance.coin?.address) {
-          console.log(`Checking ownership for coin ${i + 1}/${allBalances.length}: ${balance.coin.name || 'Unknown'} (${balance.coin.address})`);
+          console.log(`[Zora Coins Debug] Checking ownership for: ${balance.coin.name || 'Unknown'} (${balance.coin.address})`);
           const { isOwner, decimals } = await checkCoinOwnership(balance.coin.address, zoraWallet.smartWallet);
           
           if (isOwner) {
@@ -367,7 +401,11 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
             const divisor = BigInt(10 ** decimals);
             const balanceDecimal = Number(rawBalance) / Number(divisor);
             
-            console.log(`Raw balance: ${balance.balance}, Decimals: ${decimals}, Converted: ${balanceDecimal}`);
+            console.log(`[Zora Coins Debug] ✅ OWNER CONFIRMED for ${balance.coin.name}:`, {
+              rawBalance: balance.balance,
+              decimals: decimals,
+              convertedBalance: balanceDecimal
+            });
             
             filteredBalances.push({
               ...balance,
@@ -375,20 +413,22 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
               decimals,
               balanceDecimal
             });
-            console.log(`✓ Added ${balance.coin.name || 'Unknown'} to owned coins list with balance: ${balanceDecimal}`);
           } else {
-            console.log(`✗ ${balance.coin.name || 'Unknown'} is not owned by Zora smart wallet`);
+            console.log(`[Zora Coins Debug] ❌ NOT AN OWNER for ${balance.coin.name || 'Unknown'}`);
           }
         } else {
-          console.log(`Skipping coin ${i + 1}/${allBalances.length}: No contract address available`);
+          console.log(`[Zora Coins Debug] ⚠️ SKIPPED - No contract address for coin ${i + 1}/${allBalances.length}`);
         }
       }
       
       setZoraCoins(filteredBalances);
-      console.log(`Found ${filteredBalances.length} coins where Zora smart wallet is an owner out of ${allBalances.length} total coins`);
-      if (filteredBalances.length > 0) {
-        console.log('Sample owned coin balance:', filteredBalances[0]);
-      }
+      console.log(`[Zora Coins Debug] ====== FINAL RESULTS ======`);
+      console.log(`[Zora Coins Debug] Filtered to ${filteredBalances.length} owned coins out of ${allBalances.length} total coins`);
+      console.log(`[Zora Coins Debug] Final owned coins list:`, filteredBalances.map(b => ({
+        name: b.coin?.name,
+        symbol: b.coin?.symbol,
+        balance: b.balanceDecimal
+      })));
     } catch (error: unknown) {
       console.error('Failed to fetch Zora coins:', error);
       let errorMessage = 'Failed to fetch Zora coins';

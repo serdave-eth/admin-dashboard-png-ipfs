@@ -9,6 +9,8 @@ import ContentFeed from '@/components/Content/ContentFeed';
 import ZoraLinkingModal from '@/components/Auth/ZoraLinkingModal';
 import WalletDisplaySection from '@/components/UI/WalletDisplaySection';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
+import CreatorAvatar from '@/components/UI/CreatorAvatar';
+import Link from 'next/link';
 
 export default function Dashboard() {
   const { user, authenticated } = usePrivy();
@@ -67,10 +69,10 @@ export default function Dashboard() {
             </div>
             
             <div className="lg:col-span-2 space-y-6">
-              {/* Zora Coins Section */}
+              {/* Creator Coins Section */}
               {hasZoraLinked && zoraWallet?.smartWallet && (
                 <div className="bg-black/10 rounded-3xl p-8 border border-black/20 hover:border-black/30 transition-all duration-300">
-                  <h2 className="text-2xl font-anton text-black mb-6 tracking-wide">ZORA SMART WALLET COINS</h2>
+                  <h2 className="text-2xl font-anton text-black mb-6 tracking-wide">YOUR CREATOR COINS</h2>
                   <div className="mb-4">
                     <p className="text-black/70 mb-2 font-mono text-sm">
                       Smart Wallet: {zoraWallet.smartWallet}
@@ -89,76 +91,73 @@ export default function Dashboard() {
                   )}
                   
                   {isLoadingCoins && (
-                    <div className="text-black/70 font-bold">Loading coin balances...</div>
+                    <div className="text-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black"></div>
+                      <p className="text-black/70 mt-2">Loading your creator coins...</p>
+                    </div>
                   )}
                   
                   {zoraCoins.length > 0 ? (
-                    <div className="space-y-4">
-                      <p className="text-black/70 font-bold">Found {zoraCoins.length} coin(s) where you are an owner:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {zoraCoins.map((balance, index) => (
-                        <div key={balance.id || index} className="bg-green-500/10 border border-green-500/20 rounded-2xl p-6 hover:scale-105 transition-all duration-300">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-anton text-lg text-green-800 tracking-wide">
-                                  {balance.coin?.name || 'Unknown Coin'}
+                        <Link key={balance.id || index} href={`/creator/${balance.coin?.address}`}>
+                          <div className="group bg-black/10 rounded-2xl p-4 border border-black/20 hover:border-black/30 transition-all duration-300 hover:scale-105 cursor-pointer">
+                            <div className="flex items-center gap-3 mb-3">
+                              <CreatorAvatar
+                                src={balance.coin?.mediaContent?.previewImage?.small}
+                                alt={balance.coin?.name || 'Creator'}
+                                symbol={balance.coin?.symbol || '?'}
+                                size={48}
+                              />
+                              <div>
+                                <h3 className="font-anton text-black tracking-wide text-sm">
+                                  {(balance.coin?.name || 'Unknown Creator').toUpperCase()}
                                 </h3>
-                                <span className="px-3 py-1 text-xs bg-green-600 text-white rounded-full font-bold">
-                                  OWNER
+                                <p className="text-black/70 text-xs">${balance.coin?.symbol || 'UNKNOWN'}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                              <div className="bg-black/10 rounded-lg p-2 text-center">
+                                <div className="text-black/70">Your Balance</div>
+                                <div className="text-black font-bold">
+                                  {balance.balanceDecimal ? balance.balanceDecimal.toFixed(2) : '0'}
+                                </div>
+                              </div>
+                              <div className="bg-black/10 rounded-lg p-2 text-center">
+                                <div className="text-black/70">Holders</div>
+                                <div className="text-black font-bold">{balance.coin?.uniqueHolders || 0}</div>
+                              </div>
+                            </div>
+                            
+                            {balance.coin?.marketCap && parseFloat(balance.coin.marketCap) > 0 && (
+                              <div className="text-xs text-center">
+                                <span className="text-black/70">Market Cap: </span>
+                                <span className="text-black font-bold">
+                                  ${parseFloat(balance.coin.marketCap).toLocaleString()}
                                 </span>
                               </div>
-                              {balance.coin?.symbol && (
-                                <p className="text-sm text-black/70 font-bold">({balance.coin.symbol})</p>
-                              )}
-                              {balance.coin?.address && (
-                                <p className="text-xs text-black/50 font-mono break-all bg-black/5 p-2 rounded-lg mt-2">
-                                  Contract: {balance.coin.address}
-                                </p>
-                              )}
-                              {balance.coin?.description && (
-                                <p className="text-sm text-black/70 mt-2 bg-black/5 p-2 rounded-lg">{balance.coin.description.replace(/"/g, '&quot;')}</p>
-                              )}
-                            </div>
-                            <div className="text-right ml-4">
-                              <div className="text-right">
-                                <p className="font-anton text-green-800 text-lg">
-                                  Balance: {balance.balanceDecimal ? balance.balanceDecimal.toLocaleString(undefined, { maximumFractionDigits: 6 }) : balance.balance}
-                                </p>
-                                {balance.balanceDecimal && balance.balance !== balance.balanceDecimal.toString() && (
-                                  <p className="text-xs text-black/50 font-mono">
-                                    Raw: {parseInt(balance.balance).toLocaleString()}
-                                  </p>
-                                )}
-                                {balance.decimals && (
-                                  <p className="text-xs text-black/50">
-                                    Decimals: {balance.decimals}
-                                  </p>
-                                )}
-                              </div>
-                              {balance.coin?.marketCap && (
-                                <p className="text-sm text-black/70 font-bold">
-                                  Market Cap: ${parseFloat(balance.coin.marketCap).toLocaleString()}
-                                </p>
-                              )}
-                              {balance.coin?.uniqueHolders && (
-                                <p className="text-sm text-black/70 font-bold">
-                                  Holders: {balance.coin.uniqueHolders}
-                                </p>
-                              )}
+                            )}
+                            
+                            <div className="mt-2 text-center">
+                              <span className="px-2 py-1 text-xs bg-green-600 text-white rounded-full font-bold">
+                                OWNER
+                              </span>
                             </div>
                           </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   ) : !isLoadingCoins && !coinsError ? (
-                    <div className="text-black/70 bg-black/5 rounded-2xl p-6">
-                      <p className="font-bold">No coins found where you are an owner.</p>
-                      <p className="text-sm mt-1">This means the Zora smart wallet is not in the owners array for any of the coins you have balances in.</p>
+                    <div className="text-center py-8">
+                      <p className="text-black/70 font-bold">No creator coins found in your wallet.</p>
+                      <p className="text-black/50 text-sm mt-2">Purchase some creator coins to see them here!</p>
                     </div>
                   ) : null}
                 </div>
               )}
               
+
               {/* Content Section */}
               <div className="bg-black/10 rounded-3xl p-8 border border-black/20 hover:border-black/30 transition-all duration-300">
                 <h2 className="text-2xl font-anton text-black mb-6 tracking-wide">YOUR CONTENT</h2>
