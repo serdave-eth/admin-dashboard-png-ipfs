@@ -21,69 +21,59 @@ export default function CreatorPage() {
   const [isLoadingCreator, setIsLoadingCreator] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [hasFetchedCreator, setHasFetchedCreator] = useState(false);
   
   const coinAddress = params.id as string;
   const { getCreatorById } = useZoraCreators();
   const { zoraCoins, isLoadingCoins } = useZoraLinking();
   const { authenticated, login } = usePrivy();
   const userBalance = creator?.userBalanceDecimal || 0;
+  
+  // Debug user balance calculation
+  useEffect(() => {
+    if (creator) {
+      console.log('=== USER BALANCE CALCULATION DEBUG ===');
+      console.log('creator object:', creator);
+      console.log('creator.userBalance (raw):', creator.userBalance);
+      console.log('creator.userBalanceDecimal:', creator.userBalanceDecimal);
+      console.log('calculated userBalance for display:', userBalance);
+    }
+  }, [creator, userBalance]);
 
-  // Fetch creator data
+  // Fetch creator data - only depends on coinAddress and getCreatorById to prevent constant refetching
   useEffect(() => {
     const fetchCreator = async () => {
+      if (hasFetchedCreator) return; // Prevent refetching
+      
       setIsLoadingCreator(true);
       try {
-        console.log('Fetching creator for coin address:', coinAddress);
-        console.log('Authenticated:', authenticated);
-        console.log('Available zoraCoins:', zoraCoins);
-        
-        // If authenticated and zoraCoins are loaded, check for existing data first
-        if (authenticated && !isLoadingCoins) {
-          const existingCreator = zoraCoins.find(coin => coin.coin?.address === coinAddress);
-          console.log('Existing creator found:', existingCreator);
-          
-          if (existingCreator?.coin) {
-            // Use existing data from dashboard with user balance
-            const creatorData: ZoraCreatorData = {
-              id: existingCreator.coin.address || '',
-              coinAddress: existingCreator.coin.address || '',
-              name: existingCreator.coin.name || 'Unknown Creator',
-              symbol: existingCreator.coin.symbol || 'UNKNOWN',
-              description: existingCreator.coin.description || 'Creator on Zora',
-              profileImage: existingCreator.coin.mediaContent?.previewImage?.medium || 
-                           existingCreator.coin.mediaContent?.previewImage?.small || 
-                           `/api/placeholder/150/150`,
-              totalSupply: existingCreator.coin.totalSupply || '0',
-              marketCap: existingCreator.coin.marketCap || '0',
-              uniqueHolders: existingCreator.coin.uniqueHolders || 0,
-              volume24h: existingCreator.coin.volume24h || '0',
-              price: existingCreator.coin.marketCap && existingCreator.coin.totalSupply ? 
-                     parseFloat(existingCreator.coin.marketCap) / parseFloat(existingCreator.coin.totalSupply) : 0,
-              userBalance: existingCreator.balance || '0',
-              userBalanceDecimal: existingCreator.balanceDecimal || 0,
-              decimals: existingCreator.decimals || 18,
-              creatorAddress: existingCreator.coin.creatorAddress,
-              mediaContent: existingCreator.coin.mediaContent,
-            };
-            
-            console.log('Created creator data from existing coins:', creatorData);
-            setCreator(creatorData);
-            return;
-          }
-        }
+        console.log('====== CREATOR PAGE DEBUG ======');
+        console.log('Target coin address from URL:', coinAddress);
+        console.log('User authenticated:', authenticated);
         
         // Fallback to API call for basic creator info (works for both authenticated and unauthenticated)
-        console.log('Fetching creator data from API...');
+        console.log('=== FETCHING CREATOR DATA FROM API ===');
+        
         const creatorData = await getCreatorById(coinAddress);
-        console.log('API creator data:', creatorData);
+        console.log('Raw API creator data:', creatorData);
         
         if (creatorData) {
+          console.log('=== PROCESSING API CREATOR DATA ===');
+          console.log('Original userBalance from API:', creatorData.userBalance);
+          console.log('Original userBalanceDecimal from API:', creatorData.userBalanceDecimal);
+          
           // If not authenticated, ensure user balance is 0
           if (!authenticated) {
+            console.log('User not authenticated - setting balance to 0');
             creatorData.userBalance = '0';
             creatorData.userBalanceDecimal = 0;
+          } else {
+            console.log('User authenticated - keeping API balance data');
           }
+          
+          console.log('Final API creatorData before setting:', creatorData);
           setCreator(creatorData);
+          setHasFetchedCreator(true); // Mark as fetched
         }
       } catch (error) {
         console.error('Failed to fetch creator:', error);
@@ -92,10 +82,38 @@ export default function CreatorPage() {
       }
     };
 
-    if (coinAddress) {
+    if (coinAddress && !hasFetchedCreator) {
       fetchCreator();
     }
-  }, [coinAddress, getCreatorById, zoraCoins, isLoadingCoins, authenticated]);
+  }, [coinAddress, getCreatorById, authenticated, hasFetchedCreator]);
+
+  // Separate useEffect to update user balance when zoraCoins change
+  useEffect(() => {
+    if (authenticated && !isLoadingCoins && zoraCoins.length > 0 && creator) {
+      console.log('=== UPDATING USER BALANCE FROM ZORA COINS ===');
+      console.log('Total zoraCoins available:', zoraCoins?.length || 0);
+      console.log('Looking for coin:', coinAddress);
+      
+      // Try exact match first, then case-insensitive
+      const exactMatch = zoraCoins.find(coin => coin.coin?.address === coinAddress);
+      const caseInsensitiveMatch = zoraCoins.find(coin => 
+        coin.coin?.address?.toLowerCase() === coinAddress?.toLowerCase()
+      );
+      const existingCreator = exactMatch || caseInsensitiveMatch;
+      
+      console.log('Found matching coin for balance update:', existingCreator);
+      
+      if (existingCreator?.coin) {
+        console.log('Updating balance - raw:', existingCreator.balance, 'decimal:', existingCreator.balanceDecimal);
+        setCreator(prevCreator => ({
+          ...prevCreator!,
+          userBalance: existingCreator.balance || '0',
+          userBalanceDecimal: existingCreator.balanceDecimal || 0,
+          decimals: existingCreator.decimals || 18,
+        }));
+      }
+    }
+  }, [zoraCoins, authenticated, isLoadingCoins, creator, coinAddress]);
 
   // Fetch real content from database
   const fetchContent = useCallback(async (cursor?: string) => {
@@ -138,12 +156,12 @@ export default function CreatorPage() {
     }
   }, [coinAddress]);
 
-  // Fetch content when component mounts
+  // Fetch content when component mounts - only depend on coinAddress
   useEffect(() => {
     if (coinAddress) {
       fetchContent();
     }
-  }, [coinAddress, fetchContent]);
+  }, [coinAddress]); // Remove fetchContent dependency to prevent circular calls
 
   const loadMore = useCallback(() => {
     if (loading || !hasMore || !nextCursor) return;
