@@ -1,10 +1,13 @@
 {
-  "buildCommand": "npx prisma generate && npm run build",
+  "buildCommand": "npm run prisma:generate && npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
     }
+  },
+  "env": {
+    "PRISMA_GENERATE_DATAPROXY": "true"
   }
 }
