@@ -8,6 +8,7 @@ import UploadForm from '@/components/Upload/UploadForm';
 import ContentFeed from '@/components/Content/ContentFeed';
 import ZoraLinkingModal from '@/components/Auth/ZoraLinkingModal';
 import WalletDisplaySection from '@/components/UI/WalletDisplaySection';
+import TopValuableCoins from '@/components/UI/TopValuableCoins';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
 
 export default function Dashboard() {
@@ -67,6 +68,9 @@ export default function Dashboard() {
             </div>
             
             <div className="lg:col-span-2 space-y-6">
+              {/* Top Valuable Coins Section */}
+              <TopValuableCoins count={10} />
+              
               {/* Zora Coins Section */}
               {hasZoraLinked && zoraWallet?.smartWallet && (
                 <div className="bg-white rounded-lg shadow-md p-8">

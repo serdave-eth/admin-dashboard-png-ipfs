@@ -8,12 +8,15 @@ import LoadingSpinner from '@/components/UI/LoadingSpinner';
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from '@/types';
 import { formatFileSize } from '@/lib/utils';
 import { Upload, X } from 'lucide-react';
+import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
 
 export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () => void }) {
   const { user, getAccessToken } = usePrivy();
+  const { zoraCoins } = useZoraLinking();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedCreator, setSelectedCreator] = useState<string>('');
 
   const validateFile = (file: File): boolean => {
     const allowedTypes = Object.values(ALLOWED_FILE_TYPES).flat();
@@ -48,6 +51,9 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
       
       const formData = new FormData();
       formData.append('file', file);
+      if (selectedCreator) {
+        formData.append('creatorId', selectedCreator);
+      }
 
       const xhr = new XMLHttpRequest();
 
@@ -65,6 +71,7 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
             toast.success('File uploaded successfully!');
             setFile(null);
             setUploadProgress(0);
+            setSelectedCreator('');
             onUploadSuccess();
           } else {
             toast.error(response.error || 'Upload failed');
@@ -125,6 +132,30 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
                 <p className="text-sm font-medium text-gray-700 mt-2">{uploadProgress}% uploaded</p>
               </div>
             )}
+          </div>
+
+          {/* Creator Selection */}
+          <div className="space-y-2">
+            <label htmlFor="creator-select" className="block text-sm font-medium text-gray-700">
+              Associate with Creator (Optional)
+            </label>
+            <select
+              id="creator-select"
+              value={selectedCreator}
+              onChange={(e) => setSelectedCreator(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+              disabled={uploading}
+            >
+              <option value="">No specific creator</option>
+              {zoraCoins.map((coin) => (
+                <option key={coin.id} value={coin.coin?.address || coin.id}>
+                  {coin.coin?.name || 'Unknown Creator'} ({coin.coin?.symbol || 'N/A'})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500">
+              Select a creator to make this content exclusive to holders of their coin
+            </p>
           </div>
 
           <button

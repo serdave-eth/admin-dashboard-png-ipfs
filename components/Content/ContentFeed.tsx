@@ -8,7 +8,12 @@ import InfiniteScroll from './InfiniteScroll';
 import LoadingSpinner from '@/components/UI/LoadingSpinner';
 import { ContentItem } from '@/types';
 
-export default function ContentFeed({ refreshTrigger }: { refreshTrigger: number }) {
+interface ContentFeedProps {
+  refreshTrigger: number;
+  creatorFilter?: string;
+}
+
+export default function ContentFeed({ refreshTrigger, creatorFilter }: ContentFeedProps) {
   const { user, getAccessToken } = usePrivy();
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +29,10 @@ export default function ContentFeed({ refreshTrigger }: { refreshTrigger: number
       
       if (!isRefresh && cursor) {
         url.searchParams.append('cursor', cursor);
+      }
+
+      if (creatorFilter) {
+        url.searchParams.append('creator', creatorFilter);
       }
 
       const response = await fetch(url.toString(), {
@@ -61,7 +70,7 @@ export default function ContentFeed({ refreshTrigger }: { refreshTrigger: number
     setLoading(true);
     fetchContent(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTrigger, user]);
+  }, [refreshTrigger, user, creatorFilter]);
 
   const loadMore = () => {
     if (!loading && hasMore) {

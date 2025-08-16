@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const creatorId = formData.get('creatorId') as string;
 
     if (!file) {
       return NextResponse.json(
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
         fileType: file.type,
         fileSize: BigInt(size),
         ipfsCid: cid,
+        creatorId: creatorId || null,
       },
     });
 

@@ -20,9 +20,11 @@ model Content {
   fileType          String   @map("file_type")
   fileSize          BigInt   @map("file_size")
   ipfsCid           String   @unique @map("ipfs_cid")
+  creatorId         String?  @map("creator_id")
   createdAt         DateTime @default(now()) @map("created_at")
 
   @@index([userWalletAddress])
   @@index([createdAt])
+  @@index([creatorId])
   @@map("content")
 }

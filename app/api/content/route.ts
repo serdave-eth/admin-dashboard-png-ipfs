@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const cursor = searchParams.get('cursor');
+    const creator = searchParams.get('creator');
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     const where = {
@@ -24,6 +25,9 @@ export async function GET(request: NextRequest) {
         createdAt: {
           lt: new Date(cursor),
         },
+      }),
+      ...(creator && {
+        creatorId: creator,
       }),
     };
 
