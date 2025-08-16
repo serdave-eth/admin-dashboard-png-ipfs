@@ -7,9 +7,11 @@ import { useZoraCreators, ZoraCreatorData } from '@/lib/hooks/useZoraCreators';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
 import { ContentItem } from '@/types';
 import CreatorAvatar from '@/components/UI/CreatorAvatar';
+import Header from '@/components/UI/Header';
 import Image from 'next/image';
 import { Heart, Eye, Lock, Download } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
+import { getProfileBalances } from '@zoralabs/coins-sdk';
 
 export default function CreatorPage() {
   const params = useParams();
@@ -25,9 +27,38 @@ export default function CreatorPage() {
   
   const coinAddress = params.id as string;
   const { getCreatorById } = useZoraCreators();
-  const { zoraCoins, isLoadingCoins } = useZoraLinking();
-  const { authenticated, login } = usePrivy();
+  const { zoraCoins, isLoadingCoins, zoraWallet } = useZoraLinking();
+  const { login, ready, user } = usePrivy();
   const userBalance = creator?.userBalanceDecimal || 0;
+  
+  // Get user's wallet address if available
+  const userWalletAddress = user?.wallet?.address || user?.linkedAccounts?.find(account => account.type === 'wallet')?.address;
+
+  // Function to check balance using the same logic as dashboard
+  const getUserBalanceForCoin = useCallback((coinAddress: string) => {
+    console.log('=== GETTING USER BALANCE FOR COIN ===');
+    console.log('Looking for coinAddress:', coinAddress);
+    console.log('Available zoraCoins:', zoraCoins?.length || 0);
+    
+    // Use the same logic as dashboard - check the zoraCoins array
+    const userCoin = zoraCoins.find(zc => zc.coin?.address?.toLowerCase() === coinAddress?.toLowerCase());
+    console.log('Found userCoin in zoraCoins:', userCoin);
+    
+    if (userCoin) {
+      return {
+        rawBalance: userCoin.balance || '0',
+        balanceDecimal: userCoin.balanceDecimal || 0,
+        decimals: userCoin.decimals || 18
+      };
+    }
+    
+    console.log('No balance found for this coin in zoraCoins');
+    return {
+      rawBalance: '0',
+      balanceDecimal: 0,
+      decimals: 18
+    };
+  }, [zoraCoins]);
   
   // Debug user balance calculation
   useEffect(() => {
@@ -40,7 +71,7 @@ export default function CreatorPage() {
     }
   }, [creator, userBalance]);
 
-  // Fetch creator data - only depends on coinAddress and getCreatorById to prevent constant refetching
+  // Fetch creator data - simplified to just get basic info
   useEffect(() => {
     const fetchCreator = async () => {
       if (hasFetchedCreator) return; // Prevent refetching
@@ -49,31 +80,20 @@ export default function CreatorPage() {
       try {
         console.log('====== CREATOR PAGE DEBUG ======');
         console.log('Target coin address from URL:', coinAddress);
-        console.log('User authenticated:', authenticated);
+        console.log('User wallet address:', userWalletAddress);
         
-        // Fallback to API call for basic creator info (works for both authenticated and unauthenticated)
-        console.log('=== FETCHING CREATOR DATA FROM API ===');
-        
+        // Get basic creator info from API
         const creatorData = await getCreatorById(coinAddress);
         console.log('Raw API creator data:', creatorData);
         
         if (creatorData) {
-          console.log('=== PROCESSING API CREATOR DATA ===');
-          console.log('Original userBalance from API:', creatorData.userBalance);
-          console.log('Original userBalanceDecimal from API:', creatorData.userBalanceDecimal);
+          // Set basic creator data without user balance initially
+          creatorData.userBalance = '0';
+          creatorData.userBalanceDecimal = 0;
           
-          // If not authenticated, ensure user balance is 0
-          if (!authenticated) {
-            console.log('User not authenticated - setting balance to 0');
-            creatorData.userBalance = '0';
-            creatorData.userBalanceDecimal = 0;
-          } else {
-            console.log('User authenticated - keeping API balance data');
-          }
-          
-          console.log('Final API creatorData before setting:', creatorData);
+          console.log('Setting basic creator data:', creatorData);
           setCreator(creatorData);
-          setHasFetchedCreator(true); // Mark as fetched
+          setHasFetchedCreator(true);
         }
       } catch (error) {
         console.error('Failed to fetch creator:', error);
@@ -85,35 +105,22 @@ export default function CreatorPage() {
     if (coinAddress && !hasFetchedCreator) {
       fetchCreator();
     }
-  }, [coinAddress, getCreatorById, authenticated, hasFetchedCreator]);
+  }, [coinAddress, getCreatorById, hasFetchedCreator, userWalletAddress]);
 
-  // Separate useEffect to update user balance when zoraCoins change
+  // Update user balance when zoraCoins are available
   useEffect(() => {
-    if (authenticated && !isLoadingCoins && zoraCoins.length > 0 && creator) {
+    if (creator && coinAddress && zoraCoins.length > 0) {
       console.log('=== UPDATING USER BALANCE FROM ZORA COINS ===');
-      console.log('Total zoraCoins available:', zoraCoins?.length || 0);
-      console.log('Looking for coin:', coinAddress);
+      const balanceData = getUserBalanceForCoin(coinAddress);
       
-      // Try exact match first, then case-insensitive
-      const exactMatch = zoraCoins.find(coin => coin.coin?.address === coinAddress);
-      const caseInsensitiveMatch = zoraCoins.find(coin => 
-        coin.coin?.address?.toLowerCase() === coinAddress?.toLowerCase()
-      );
-      const existingCreator = exactMatch || caseInsensitiveMatch;
-      
-      console.log('Found matching coin for balance update:', existingCreator);
-      
-      if (existingCreator?.coin) {
-        console.log('Updating balance - raw:', existingCreator.balance, 'decimal:', existingCreator.balanceDecimal);
-        setCreator(prevCreator => ({
-          ...prevCreator!,
-          userBalance: existingCreator.balance || '0',
-          userBalanceDecimal: existingCreator.balanceDecimal || 0,
-          decimals: existingCreator.decimals || 18,
-        }));
-      }
+      setCreator(prevCreator => ({
+        ...prevCreator!,
+        userBalance: balanceData.rawBalance,
+        userBalanceDecimal: balanceData.balanceDecimal,
+        decimals: balanceData.decimals,
+      }));
     }
-  }, [zoraCoins, authenticated, isLoadingCoins, creator, coinAddress]);
+  }, [creator, coinAddress, zoraCoins, getUserBalanceForCoin]);
 
   // Fetch real content from database
   const fetchContent = useCallback(async (cursor?: string) => {
@@ -179,14 +186,14 @@ export default function CreatorPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [loadMore]);
 
-  if (isLoadingCreator || (authenticated && isLoadingCoins)) {
+  if (!ready || isLoadingCreator) {
     return (
       <div className="min-h-screen" style={{backgroundColor: '#F6CA46'}}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black mb-4"></div>
             <p className="text-black font-bold">
-              {(authenticated && isLoadingCoins) ? 'Loading your coin balances...' : 'Loading creator information...'}
+              {!ready ? 'Initializing...' : 'Loading creator information...'}
             </p>
           </div>
         </div>
@@ -218,17 +225,7 @@ export default function CreatorPage() {
         <div className="absolute bottom-40 right-10 w-96 h-96 bg-orange-600 rounded-full mix-blend-multiply filter blur-3xl animate-float animation-delay-2000" />
       </div>
 
-      <nav className="relative z-10 flex justify-between items-center p-6">
-        <Link href="/" className="text-3xl font-anton text-black hover:scale-105 transition-transform tracking-wide">
-          BACKSTAGE
-        </Link>
-        <Link href="/dashboard" className="bg-black/10 px-6 py-3 rounded-full text-black font-medium hover:bg-black/20 transition-colors flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Dashboard
-        </Link>
-      </nav>
+      <Header />
 
       <main className="relative z-10 container mx-auto px-6 py-12">
         <div className="bg-black/10 rounded-3xl p-8 mb-12 border border-black/20">
@@ -284,12 +281,12 @@ export default function CreatorPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:justify-start">
-                {!authenticated ? (
+                {!zoraWallet?.smartWallet ? (
                   <button 
                     onClick={login}
                     className="bg-blue-100 border border-blue-600/30 rounded-full px-6 py-3 hover:bg-blue-200 transition-colors"
                   >
-                    <p className="text-blue-700 font-bold">Login to check ownership</p>
+                    <p className="text-blue-700 font-bold">Login to check balance</p>
                   </button>
                 ) : userBalance > 0 ? (
                   <div className="bg-green-100 border border-green-600/30 rounded-full px-6 py-3">
