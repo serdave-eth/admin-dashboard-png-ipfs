@@ -1,10 +1,23 @@
 import type { Metadata } from 'next';
+import { Anton } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import './globals.css';
 import Providers from '@/components/Providers';
 
+const anton = Anton({ 
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-anton"
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono"
+});
+
 export const metadata: Metadata = {
-  title: 'Admin Dashboard',
-  description: 'Upload and manage your content on IPFS',
+  title: 'Backstage - Admin Dashboard',
+  description: 'Upload and manage your content on IPFS with token-gated access',
 };
 
 export default function RootLayout({
@@ -14,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={`${geistMono.variable} ${anton.variable} font-mono antialiased`} style={{backgroundColor: '#F6CA46'}}>
         <Providers>{children}</Providers>
       </body>
     </html>
