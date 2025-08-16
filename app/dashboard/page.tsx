@@ -56,7 +56,7 @@ export default function Dashboard() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{backgroundColor: '#F6CA46'}}>
         <Header />
         
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -69,79 +69,79 @@ export default function Dashboard() {
             <div className="lg:col-span-2 space-y-6">
               {/* Zora Coins Section */}
               {hasZoraLinked && zoraWallet?.smartWallet && (
-                <div className="bg-white rounded-lg shadow-md p-8">
-                  <h2 className="text-xl font-bold mb-6">Zora Smart Wallet Coins</h2>
+                <div className="bg-black/10 rounded-3xl p-8 border border-black/20 hover:border-black/30 transition-all duration-300">
+                  <h2 className="text-2xl font-anton text-black mb-6 tracking-wide">ZORA SMART WALLET COINS</h2>
                   <div className="mb-4">
-                    <p className="text-gray-600 mb-2">
+                    <p className="text-black/70 mb-2 font-mono text-sm">
                       Smart Wallet: {zoraWallet.smartWallet}
                     </p>
                     <button
                       onClick={fetchZoraCoins}
                       disabled={isLoadingCoins}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                      className="bg-black text-yellow-400 px-6 py-3 rounded-full font-bold hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
                     >
                       {isLoadingCoins ? 'Loading...' : 'Refresh Coins'}
                     </button>
                   </div>
                   
                   {coinsError && (
-                    <div className="text-red-600 mb-4">{coinsError}</div>
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-red-800 font-bold mb-4">{coinsError}</div>
                   )}
                   
                   {isLoadingCoins && (
-                    <div className="text-gray-600">Loading coin balances...</div>
+                    <div className="text-black/70 font-bold">Loading coin balances...</div>
                   )}
                   
                   {zoraCoins.length > 0 ? (
                     <div className="space-y-4">
-                      <p className="text-gray-600">Found {zoraCoins.length} coin(s) where you are an owner:</p>
+                      <p className="text-black/70 font-bold">Found {zoraCoins.length} coin(s) where you are an owner:</p>
                       {zoraCoins.map((balance, index) => (
-                        <div key={balance.id || index} className="border rounded-lg p-4 bg-green-50 border-green-200">
+                        <div key={balance.id || index} className="bg-green-500/10 border border-green-500/20 rounded-2xl p-6 hover:scale-105 transition-all duration-300">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-semibold text-green-800">
+                                <h3 className="font-anton text-lg text-green-800 tracking-wide">
                                   {balance.coin?.name || 'Unknown Coin'}
                                 </h3>
-                                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                                  Owner
+                                <span className="px-3 py-1 text-xs bg-green-600 text-white rounded-full font-bold">
+                                  OWNER
                                 </span>
                               </div>
                               {balance.coin?.symbol && (
-                                <p className="text-sm text-gray-600">({balance.coin.symbol})</p>
+                                <p className="text-sm text-black/70 font-bold">({balance.coin.symbol})</p>
                               )}
                               {balance.coin?.address && (
-                                <p className="text-xs text-gray-500 font-mono break-all">
+                                <p className="text-xs text-black/50 font-mono break-all bg-black/5 p-2 rounded-lg mt-2">
                                   Contract: {balance.coin.address}
                                 </p>
                               )}
                               {balance.coin?.description && (
-                                <p className="text-sm text-gray-500 mt-1">{balance.coin.description.replace(/"/g, '&quot;')}</p>
+                                <p className="text-sm text-black/70 mt-2 bg-black/5 p-2 rounded-lg">{balance.coin.description.replace(/"/g, '&quot;')}</p>
                               )}
                             </div>
                             <div className="text-right ml-4">
                               <div className="text-right">
-                                <p className="font-medium text-green-800">
+                                <p className="font-anton text-green-800 text-lg">
                                   Balance: {balance.balanceDecimal ? balance.balanceDecimal.toLocaleString(undefined, { maximumFractionDigits: 6 }) : balance.balance}
                                 </p>
                                 {balance.balanceDecimal && balance.balance !== balance.balanceDecimal.toString() && (
-                                  <p className="text-xs text-gray-500">
+                                  <p className="text-xs text-black/50 font-mono">
                                     Raw: {parseInt(balance.balance).toLocaleString()}
                                   </p>
                                 )}
                                 {balance.decimals && (
-                                  <p className="text-xs text-gray-500">
+                                  <p className="text-xs text-black/50">
                                     Decimals: {balance.decimals}
                                   </p>
                                 )}
                               </div>
                               {balance.coin?.marketCap && (
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-black/70 font-bold">
                                   Market Cap: ${parseFloat(balance.coin.marketCap).toLocaleString()}
                                 </p>
                               )}
                               {balance.coin?.uniqueHolders && (
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-black/70 font-bold">
                                   Holders: {balance.coin.uniqueHolders}
                                 </p>
                               )}
@@ -151,8 +151,8 @@ export default function Dashboard() {
                       ))}
                     </div>
                   ) : !isLoadingCoins && !coinsError ? (
-                    <div className="text-gray-500">
-                      <p>No coins found where you are an owner.</p>
+                    <div className="text-black/70 bg-black/5 rounded-2xl p-6">
+                      <p className="font-bold">No coins found where you are an owner.</p>
                       <p className="text-sm mt-1">This means the Zora smart wallet is not in the owners array for any of the coins you have balances in.</p>
                     </div>
                   ) : null}
@@ -160,8 +160,8 @@ export default function Dashboard() {
               )}
               
               {/* Content Section */}
-              <div className="bg-white rounded-lg shadow-md p-8">
-                <h2 className="text-xl font-bold mb-6">Your Content</h2>
+              <div className="bg-black/10 rounded-3xl p-8 border border-black/20 hover:border-black/30 transition-all duration-300">
+                <h2 className="text-2xl font-anton text-black mb-6 tracking-wide">YOUR CONTENT</h2>
                 <ContentFeed refreshTrigger={refreshTrigger} />
               </div>
             </div>
