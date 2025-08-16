@@ -3,10 +3,16 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { Wallet } from 'lucide-react';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function LoginButton() {
-  const { login, authenticated, ready } = usePrivy();
+  const { login, logout, authenticated, ready } = usePrivy();
   const [isLoading, setIsLoading] = useState(false);
+  const pathname = usePathname();
+  
+  // Show as authenticated on Imagine creator page for demo purposes
+  const isImagineCreatorPage = pathname === '/creator/imagine';
+  const showAsAuthenticated = authenticated || isImagineCreatorPage;
 
   const handleConnect = async () => {
     setIsLoading(true);
@@ -14,38 +20,49 @@ export default function LoginButton() {
     setIsLoading(false);
   };
 
+  const handleDisconnect = async () => {
+    setIsLoading(true);
+    await logout();
+    setIsLoading(false);
+  };
+
   if (!ready) {
     return (
       <button
         disabled
-        className="w-full flex items-center justify-center gap-2 bg-black/10 text-black/40 px-8 py-4 rounded-full font-bold text-lg border border-black/20"
+        className="bg-gray-300 text-gray-500 px-6 py-2 rounded-full font-semibold text-sm cursor-not-allowed"
       >
-        <div className="w-4 h-4 border-2 border-black/30 border-t-black/70 rounded-full animate-spin" />
         Loading...
       </button>
     );
   }
 
-  if (authenticated) {
-    return null;
+  if (showAsAuthenticated) {
+    return (
+      <button
+        onClick={handleDisconnect}
+        disabled={isLoading}
+        className="bg-black text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors"
+      >
+        {isLoading ? (
+          <span>Disconnecting...</span>
+        ) : (
+          <span>Disconnect Wallet</span>
+        )}
+      </button>
+    );
   }
 
   return (
     <button
       onClick={handleConnect}
       disabled={isLoading}
-      className="w-full relative bg-black text-yellow-400 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition-all duration-200 shadow-lg"
+      className="bg-black text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-gray-800 transition-colors"
     >
       {isLoading ? (
-        <div className="flex items-center justify-center gap-2">
-          <div className="w-4 h-4 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full animate-spin" />
-          <span>Connecting...</span>
-        </div>
+        <span>Connecting...</span>
       ) : (
-        <div className="flex items-center justify-center gap-2">
-          <Wallet className="w-5 h-5" />
-          <span>Connect Wallet</span>
-        </div>
+        <span>Connect Wallet</span>
       )}
     </button>
   );

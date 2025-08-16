@@ -2,13 +2,13 @@
 
 import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import LoginButton from '@/components/Auth/LoginButton';
+import TopCreators from '@/components/TopCreators';
 
 export default function Home() {
   const { authenticated } = usePrivy();
   const router = useRouter();
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (authenticated) {
@@ -16,64 +16,58 @@ export default function Home() {
     }
   }, [authenticated, router]);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{backgroundColor: '#F6CA46'}}>
-      {/* Cursor glow effect */}
-      <div 
-        className="pointer-events-none fixed w-64 h-64 rounded-full bg-black/10 blur-3xl transition-all duration-300 ease-out z-0"
-        style={{ 
-          left: `${mousePosition.x - 128}px`, 
-          top: `${mousePosition.y - 128}px` 
-        }}
-      />
-
-      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center p-24">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <div className="inline-block mb-4">
-              <span className="text-sm font-medium text-blue-400 bg-blue-400/10 px-4 py-2 rounded-full border border-blue-400/20">
-                ⚡ Admin Portal
-              </span>
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-black tracking-tight">
+                Backstage
+              </h1>
             </div>
-            <h1 className="text-6xl md:text-7xl font-anton text-black mb-6 tracking-tight">
-              BACKSTAGE
-            </h1>
-            <p className="text-xl text-black/80 max-w-2xl mx-auto leading-relaxed mb-8">
-              Upload and manage your content on IPFS with token-gated access
-            </p>
-          </div>
-          
-          <div className="group bg-black/10 rounded-3xl p-8 cursor-pointer hover:scale-105 transition-all duration-300 border border-black/20 hover:border-black/30 relative overflow-hidden">
-            {/* Gradient overlay on hover */}
-            <div className="absolute inset-0 bg-gradient-to-br from-black/5 to-orange-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
-            <div className="relative">
-              <h2 className="text-3xl font-anton text-black mb-4 text-center tracking-wide">
-                WELCOME BACK
-              </h2>
-              <p className="text-black/70 text-center mb-6">
-                Connect your wallet to access your dashboard
-              </p>
+            {/* Connect Wallet Button */}
+            <div className="flex items-center space-x-4">
               <LoginButton />
             </div>
           </div>
-          
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <main>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
           <div className="text-center">
-            <div className="bg-black/10 rounded-2xl p-4 border border-black/20">
-              <p className="text-black/80 font-bold">Supported file type: PNG images only</p>
-              <p className="text-black/70 mt-1">Max file size: 100MB</p>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-black mb-6 tracking-tight">
+              The Patreon for
+              <br />
+              <span className="text-blue-600">Creator Coins</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-12">
+              Support creators through coin ownership and unlock exclusive content.
+            </p>
+            
+            {/* Creator Profile Icons */}
+            <div className="flex justify-center items-center mb-12">
+              <TopCreators />
+            </div>
+            
+            <div className="flex justify-center items-center mb-16">
+              <button 
+                onClick={() => router.push('/explore')}
+                className="bg-black text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors"
+              >
+                Explore Creators
+              </button>
             </div>
           </div>
+
         </div>
       </main>
+
     </div>
   );
 }
