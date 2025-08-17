@@ -53,7 +53,7 @@ interface CoinBalance {
   isOwner?: boolean;
 }
 
-// Contract ABI for the balanceOf function and decimals
+// Contract ABI for the balanceOf function, decimals, and owners
 const CONTRACT_ABI = [
   {
     "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
@@ -66,6 +66,13 @@ const CONTRACT_ABI = [
     "inputs": [],
     "name": "decimals",
     "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owners",
+    "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}],
     "stateMutability": "view",
     "type": "function"
   }
@@ -310,7 +317,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
   }, []);
 
   // Check if Zora smart wallet has a balance > 0 for a specific coin contract and get decimals
-  const checkCoinBalance = useCallback(async (coinAddress: string, zoraSmartWallet: string): Promise<{hasBalance: boolean, decimals: number, balance: string}> => {
+  const checkCoinBalance = useCallback(async (coinAddress: string, zoraSmartWallet: string): Promise<{hasBalance: boolean, decimals: number, balance: string, isOwner: boolean}> => {
     console.log(`[Balance Check] Starting balance check for coin ${coinAddress} with wallet ${zoraSmartWallet}`);
     try {
       // Connect to Base network using LlamaRPC
@@ -319,29 +326,35 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
       // Create contract instance
       const contract = new ethers.Contract(coinAddress, CONTRACT_ABI, provider);
       
-      // Call the balanceOf function and decimals function
-      console.log(`[Balance Check] Calling contract.balanceOf(${zoraSmartWallet}) and contract.decimals()...`);
-      const [balance, decimals] = await Promise.all([
+      // Call the balanceOf function, decimals function, and owners function
+      console.log(`[Balance Check] Calling contract.balanceOf(${zoraSmartWallet}), contract.decimals(), and contract.owners()...`);
+      const [balance, decimals, owners] = await Promise.all([
         contract.balanceOf(zoraSmartWallet),
-        contract.decimals()
+        contract.decimals(),
+        contract.owners()
       ]);
       
       console.log(`[Balance Check] Raw balance for ${coinAddress}:`, balance.toString());
       console.log(`[Balance Check] Decimals for ${coinAddress}:`, decimals);
+      console.log(`[Balance Check] Owners for ${coinAddress}:`, owners);
       
       // Check if user has any balance
       const hasBalance = BigInt(balance) > BigInt(0);
       
-      console.log(`[Balance Check] Result: Coin ${coinAddress}: Zora wallet ${zoraSmartWallet} has balance: ${hasBalance}, raw balance: ${balance.toString()}, decimals: ${decimals}`);
+      // Check if user is an owner
+      const isOwner = owners.includes(zoraSmartWallet);
+      
+      console.log(`[Balance Check] Result: Coin ${coinAddress}: Zora wallet ${zoraSmartWallet} has balance: ${hasBalance}, raw balance: ${balance.toString()}, decimals: ${decimals}, isOwner: ${isOwner}`);
       return { 
         hasBalance, 
         decimals: Number(decimals), 
-        balance: balance.toString() 
+        balance: balance.toString(),
+        isOwner
       };
     } catch (error) {
       console.error(`[Balance Check] ERROR - Failed to check balance for coin ${coinAddress}:`, error);
       console.error(`[Balance Check] This coin will be excluded due to error. Returning hasBalance: false`);
-      return { hasBalance: false, decimals: 18, balance: '0' }; // Default to 18 decimals on error
+      return { hasBalance: false, decimals: 18, balance: '0', isOwner: false }; // Default to 18 decimals on error
     }
   }, []);
 
@@ -426,7 +439,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
         
         if (balance.coin?.address) {
           console.log(`[Zora Coins Debug] Checking balance for: ${balance.coin.name || 'Unknown'} (${balance.coin.address})`);
-          const { hasBalance, decimals, balance: rawBalance } = await checkCoinBalance(balance.coin.address, zoraWallet.smartWallet);
+          const { hasBalance, decimals, balance: rawBalance, isOwner } = await checkCoinBalance(balance.coin.address, zoraWallet.smartWallet);
           
           // Convert raw balance to decimal balance
           const balanceDecimal = Number(rawBalance) / Number(10 ** decimals);
@@ -440,7 +453,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
             
             processedBalances.push({
               ...balance,
-              isOwner: false, // This indicates if user is the creator
+              isOwner: isOwner, // This indicates if user is the creator
               decimals,
               balanceDecimal
             });

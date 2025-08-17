@@ -49,7 +49,10 @@ export class BalanceUtils implements BalanceUtilsInterface {
   }
 
   formatBalance(balance: number, decimals: number = 2): string {
-    return balance.toFixed(decimals);
+    return balance.toLocaleString('en-US', { 
+      minimumFractionDigits: decimals, 
+      maximumFractionDigits: decimals 
+    });
   }
 
   hasMinimumBalance(userBalance: number, requiredBalance: number): boolean {

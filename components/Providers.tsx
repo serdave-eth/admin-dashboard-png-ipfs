@@ -11,7 +11,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       config={privyConfig.config}
     >
       {children}
-      <Toaster position="bottom-right" />
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          style: { width: 'auto', minWidth: '120px', maxWidth: '200px' }
+        }}
+      />
     </PrivyProvider>
   );
 }

@@ -166,13 +166,13 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
           </div>
 
           {/* Coin Selection Form */}
-          {hasZoraLinked && zoraCoins.length > 0 && (
+          {hasZoraLinked && zoraCoins.filter(coin => coin.isOwner).length > 0 && (
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Content Access Requirements</h3>
               <div className="space-y-4">
                 <div>
                   <label htmlFor="coin-select" className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Coin (You must own this coin to view content)
+                    Select Creator Coin
                   </label>
                   <select
                     id="coin-select"
@@ -181,8 +181,8 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     disabled={uploading}
                   >
-                    <option value="">Choose a coin...</option>
-                    {zoraCoins.map((coin, index) => (
+                    <option value="">Choose a coin</option>
+                    {zoraCoins.filter(coin => coin.isOwner).map((coin, index) => (
                       <option key={`${coin.id || coin.coin?.address || 'coin'}-${index}`} value={coin.coin?.address || ''}>
                         {coin.coin?.name || 'Unknown'} ({coin.coin?.symbol || 'N/A'}) - Balance: {coin.balanceDecimal ? coin.balanceDecimal.toLocaleString(undefined, { maximumFractionDigits: 6 }) : coin.balance}
                       </option>
@@ -192,7 +192,7 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
                 
                 <div>
                   <label htmlFor="minimum-amount" className="block text-sm font-medium text-gray-700 mb-2">
-                    Minimum Token Amount Required
+                    Minimum Coin Amount Required
                   </label>
                   <input
                     type="number"
@@ -206,7 +206,7 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
                     disabled={uploading}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Users must hold at least this amount of the selected coin to view this content
+                    Users must hold at least this amount to view
                   </p>
                 </div>
               </div>
@@ -233,17 +233,17 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
           )}
 
           {/* No Coins Message */}
-          {hasZoraLinked && zoraCoins.length === 0 && (
+          {hasZoraLinked && zoraCoins.filter(coin => coin.isOwner).length === 0 && (
             <div className="border-t pt-6">
               <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
                 <div className="flex">
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-yellow-800">
-                      No Owned Coins Found
+                      No Creator Coins Found
                     </h3>
                     <div className="mt-2 text-sm text-yellow-700">
-                      <p>You need to own at least one coin to set content access requirements.</p>
-                      <p className="mt-1">Make sure you have linked your Zora account and own some coins.</p>
+                      <p>You need to be the creator of at least one coin to set content access requirements.</p>
+                      <p className="mt-1">Launch your own creator coin on Zora to enable content gating.</p>
                     </div>
                   </div>
                 </div>

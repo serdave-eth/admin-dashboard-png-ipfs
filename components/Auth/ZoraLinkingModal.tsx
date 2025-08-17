@@ -65,7 +65,7 @@ export default function ZoraLinkingModal({ isOpen, onClose, showOnLogin = false 
           <button
             onClick={handleClose}
             disabled={isLinking}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="text-gray-400 hover:text-gray-600 disabled:opacity-50 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -126,14 +126,14 @@ export default function ZoraLinkingModal({ isOpen, onClose, showOnLogin = false 
                 <button
                   onClick={handleClose}
                   disabled={isLinking}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {showOnLogin ? 'Skip for now' : 'Cancel'}
                 </button>
                 <button
                   onClick={handleLinkZora}
                   disabled={isLinking}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isLinking ? (
                     <>
