@@ -275,7 +275,7 @@ export default function CreatorPage() {
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 pointer-events-none" />
               {(creator.uniqueHolders || 0) > 100 && (
                 <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-black text-sm font-bold px-3 py-1 rounded-full">
-                  🔥 TOP CREATOR
+                  TOP CREATOR
                 </div>
               )}
             </div>
