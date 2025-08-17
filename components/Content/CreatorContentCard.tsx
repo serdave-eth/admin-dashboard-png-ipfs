@@ -122,10 +122,7 @@ const CreatorContentCard: React.FC<CreatorContentCardProps> = ({
             <div className="text-center">
               <Lock className="w-8 h-8 text-white mb-2 mx-auto" />
               <p className="text-white text-sm font-bold">
-                {content.requiredBalance} tokens required
-              </p>
-              <p className="text-white/70 text-xs">
-                You have {userBalance}
+                {content.requiredBalance} coins required
               </p>
             </div>
           </div>

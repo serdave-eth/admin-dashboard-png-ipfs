@@ -23,7 +23,7 @@ export default function WalletDisplaySection({ primaryWallet, className = '' }: 
     try {
       await navigator.clipboard.writeText(address);
       setCopiedWallet(type);
-      toast.success(`${type === 'primary' ? 'Dashboard' : 'Zora'} wallet address copied!`);
+      toast.success('Address copied');
       setTimeout(() => setCopiedWallet(null), 2000);
     } catch {
       toast.error('Failed to copy address');

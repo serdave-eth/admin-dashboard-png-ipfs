@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Lock, Unlock, Users, TrendingUp, Coins } from 'lucide-react';
 import Image from 'next/image';
 import { getCoin } from '@zoralabs/coins-sdk';
+import { usePrivy } from '@privy-io/react-auth';
+import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
 
 interface Creator {
   id: string;
@@ -17,13 +19,15 @@ interface Creator {
   marketCapDelta24h?: string;
   imageUrl?: string;
   contentCount?: number;
-  isLocked?: boolean;
+  userBalance?: number;
 }
 
 export default function ExplorePage() {
   const router = useRouter();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, authenticated } = usePrivy();
+  const { zoraCoins, hasZoraLinked, zoraWallet } = useZoraLinking();
 
   // Specific Zora coin addresses to fetch
   const targetAddresses = [
@@ -57,6 +61,12 @@ export default function ExplorePage() {
             // Fetch actual content count
             const contentCount = await fetchContentCount(coin.address);
             
+            // Get user balance for this coin
+            const userCoin = zoraCoins.find(zc => 
+              zc.coin?.address?.toLowerCase() === coin.address?.toLowerCase()
+            );
+            const userBalance = userCoin?.balanceDecimal || 0;
+
             return {
               id: coin.address,
               name: coin.name || 'Unknown Creator',
@@ -70,7 +80,7 @@ export default function ExplorePage() {
                        coin.mediaContent?.previewImage?.small || 
                        `https://api.dicebear.com/7.x/identicon/svg?seed=${coin.name}&backgroundColor=b6e3f4`,
               contentCount: contentCount, // Real content count from database
-              isLocked: Math.random() > 0.5, // Random lock status
+              userBalance: userBalance, // Real user balance
             };
           }
           return null;
@@ -94,7 +104,7 @@ export default function ExplorePage() {
 
   useEffect(() => {
     fetchCreatorData();
-  }, []);
+  }, [zoraCoins]); // Re-fetch when user's coin balances change
 
   const CreatorCard = ({ creator }: { creator: Creator }) => (
     <div 
@@ -109,17 +119,6 @@ export default function ExplorePage() {
             fill
             className="object-cover"
           />
-        </div>
-        <div className="absolute top-4 right-4 p-2 rounded-full">
-          {creator.isLocked ? (
-            <div className="bg-black/80 text-white p-2 rounded-full">
-              <Lock className="w-4 h-4" />
-            </div>
-          ) : (
-            <div className="bg-green-500 text-white p-2 rounded-full">
-              <Unlock className="w-4 h-4" />
-            </div>
-          )}
         </div>
       </div>
       
@@ -149,7 +148,7 @@ export default function ExplorePage() {
               <TrendingUp className="w-3 h-3" /> 24h Vol
             </p>
             <p className="font-semibold text-sm">
-              ${creator.volume24h ? parseFloat(creator.volume24h).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0'}
+              ${creator.volume24h ? Math.floor(parseFloat(creator.volume24h)).toLocaleString() : '0'}
             </p>
           </div>
           <div>
