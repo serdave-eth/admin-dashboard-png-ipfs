@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useZoraCreators, ZoraCreatorData } from '@/lib/hooks/useZoraCreators';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
 import { ContentItem } from '@/types';
 import CreatorAvatar from '@/components/UI/CreatorAvatar';
 import Image from 'next/image';
-import { Lock } from 'lucide-react';
+import { Lock, ArrowLeft } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
 import { createCreatorService } from '@/lib/services/creatorService';
 import { createContentService } from '@/lib/services/contentService';
@@ -17,6 +17,7 @@ import ContentModal from '@/components/Content/ContentModal';
 
 export default function CreatorPage() {
   const params = useParams();
+  const router = useRouter();
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [displayedContents, setDisplayedContents] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,9 +45,9 @@ export default function CreatorPage() {
   console.log('fetchZoraCoins function:', typeof fetchZoraCoins);
   
   // Initialize services
-  const creatorService = createCreatorService(getCreatorById);
-  const contentService = createContentService();
-  const balanceUtils = createBalanceUtils();
+  const creatorService = useMemo(() => createCreatorService(getCreatorById), []);
+  const contentService = useMemo(() => createContentService(), []);
+  const balanceUtils = useMemo(() => createBalanceUtils(), []);
   
   // Helper function to format relative time
   const formatRelativeTime = (date: Date) => {
@@ -173,7 +174,10 @@ export default function CreatorPage() {
       console.log('Updated creator with balance:', updatedCreator);
       console.log('User balance decimal:', updatedCreator.userBalanceDecimal);
       
-      setCreator(updatedCreator);
+      // Only update if the balance actually changed
+      if (updatedCreator.userBalanceDecimal !== creator.userBalanceDecimal) {
+        setCreator(updatedCreator);
+      }
     } else {
       console.log('=== BALANCE UPDATE CONDITIONS NOT MET ===');
       console.log('Creator exists:', !!creator);
@@ -280,7 +284,18 @@ export default function CreatorPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-8">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-8 relative">
+          {/* Back Arrow */}
+          <button 
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.history.back();
+              }
+            }}
+            className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="relative">
               <CreatorAvatar
@@ -301,12 +316,12 @@ export default function CreatorPage() {
               <h1 className="text-5xl font-anton text-black mb-2 tracking-wide">{creator.name.toUpperCase()}</h1>
               <p className="text-xl text-black/70 mb-6">${creator.symbol}</p>
               
-              <div className="grid grid-cols-2 gap-3 mb-4 max-w-xs">
-                <div>
-                  <p className="text-gray-500 text-sm flex items-center gap-1">
+              <div className="grid grid-cols-3 gap-3 mb-4 max-w-md">
+                <div className="text-center md:text-left">
+                  <p className="text-gray-500 text-sm flex items-center gap-1 justify-center md:justify-start">
                     Market Cap
                   </p>
-                  <p className="font-semibold text-lg">
+                  <p className="font-semibold text-lg text-center md:text-left">
                     {creator.marketCap ? (() => {
                       const mcap = parseFloat(creator.marketCap);
                       if (mcap >= 1000000) return `$${(mcap / 1000000).toFixed(1)}M`;
@@ -315,31 +330,29 @@ export default function CreatorPage() {
                     })() : '$0'}
                   </p>
                 </div>
-                <div>
-                  <p className="text-gray-500 text-sm flex items-center gap-1">
+                <div className="text-center md:text-left">
+                  <p className="text-gray-500 text-sm flex items-center gap-1 justify-center md:justify-start">
                     Holders
                   </p>
-                  <p className="font-semibold text-lg">{(creator.uniqueHolders || 0).toLocaleString()}</p>
+                  <p className="font-semibold text-lg text-center md:text-left">{(creator.uniqueHolders || 0).toLocaleString()}</p>
+                </div>
+                <div className="text-center md:text-left">
+                  <p className="text-gray-500 text-sm flex items-center gap-1 justify-center md:justify-start">
+                    <span className="md:hidden">Balance</span>
+                    <span className="hidden md:inline">Your Balance</span>
+                  </p>
+                  <p className="font-semibold text-lg text-center md:text-left">
+                    {zoraWallet?.smartWallet && userBalance > 0 
+                      ? Math.floor(userBalance).toLocaleString()
+                      : '0'
+                    }
+                  </p>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:justify-start">
-                {zoraWallet?.smartWallet && (
-                  userBalance > 0 ? (
-                    <div className="bg-green-100 border border-green-600/30 rounded-full px-6 py-3">
-                      <p className="text-green-700 font-bold flex items-center gap-2">
-                        <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
-                        You own {balanceUtils.formatBalance(userBalance)} ${creator.symbol}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="bg-gray-100 rounded-full px-6 py-3 border border-gray-200">
-                      <p className="text-gray-600">You don&apos;t own any ${creator.symbol}</p>
-                    </div>
-                  )
-                )}
                 <button className="bg-black text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors cursor-pointer">
-                  Buy ${creator.symbol}
+                  Buy ${creator.symbol} (coming soon)
                 </button>
               </div>
               
@@ -407,13 +420,9 @@ export default function CreatorPage() {
                         {!isUnlocked && (
                           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
                             <div className="text-center bg-black/80 rounded-xl p-4">
-                              <Lock className="w-10 h-10 text-yellow-400 mb-2 mx-auto" />
+                              <Lock className="w-10 h-10 text-gray-400 mb-2 mx-auto" />
                               <p className="text-white text-sm font-bold">
-                                {requiredBalance} tokens required
-                              </p>
-                              <p className="text-white/70 text-xs mt-1">
-                                You have {balanceUtils.formatBalance(userBalance)}
-
+                                {requiredBalance} coins required
                               </p>
                               {!user && (
                                 <p className="text-white/80 text-xs mt-1">
