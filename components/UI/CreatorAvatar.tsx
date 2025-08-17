@@ -17,45 +17,37 @@ const CreatorAvatar: React.FC<CreatorAvatarProps> = ({
   size = 48 
 }) => {
   const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleImageError = () => {
     setImageError(true);
   };
 
-  const handleImageLoad = () => {
-    setImageLoaded(true);
-  };
-
-  // Show fallback if no src, image failed to load, or image hasn't loaded yet
-  const showFallback = !src || imageError || !imageLoaded;
+  // Show fallback only if no src or image failed to load
+  const showFallback = !src || imageError;
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      {src && !imageError && (
+    <div className="relative rounded-full overflow-hidden" style={{ width: size, height: size }}>
+      {src && !imageError ? (
         <Image
           src={src}
           alt={alt}
           fill
-          className="rounded-full object-cover"
+          className="object-cover"
           onError={handleImageError}
-          onLoad={handleImageLoad}
-          style={{ display: imageLoaded ? 'block' : 'none' }}
+          unoptimized
         />
-      )}
-      
-      {/* Fallback gradient avatar */}
-      <div 
-        className={`bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center ${showFallback ? '' : 'hidden'}`}
-        style={{ width: size, height: size }}
-      >
-        <span 
-          className="text-white font-bold" 
-          style={{ fontSize: Math.max(12, size / 3) }}
+      ) : (
+        <div 
+          className="bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center w-full h-full"
         >
-          {symbol.charAt(0).toUpperCase()}
-        </span>
-      </div>
+          <span 
+            className="text-white font-bold" 
+            style={{ fontSize: Math.max(12, size / 3) }}
+          >
+            {symbol.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

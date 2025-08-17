@@ -93,15 +93,8 @@ export const useZoraCreators = (): UseZoraCreatorsReturn => {
         name: coin?.name || 'Unknown Creator',
         symbol: coin?.symbol || 'UNKNOWN',
         description: coin?.description || 'Creator on Zora',
-        profileImage: coin?.avatarUrl || 
-                     coin?.imageUrl || 
-                     coin?.image || 
-                     coin?.avatar || 
-                     coin?.mediaContent?.avatar || 
-                     coin?.mediaContent?.image || 
-                     coin?.mediaContent?.previewImage?.medium || 
-                     coin?.mediaContent?.previewImage?.small || 
-                     undefined,
+        profileImage: coin?.mediaContent?.previewImage?.medium || 
+                     coin?.mediaContent?.previewImage?.small,
         totalSupply: coin?.totalSupply || '0',
         marketCap: coin?.marketCap || '0',
         uniqueHolders: coin?.uniqueHolders || 0,
@@ -150,15 +143,6 @@ export const useZoraCreators = (): UseZoraCreatorsReturn => {
       if (response.data?.zora20Token) {
         const coin = response.data.zora20Token;
         
-        // Debug the mediaContent structure
-        console.log('=== MEDIA CONTENT DEBUG ===');
-        console.log('Full coin object:', JSON.stringify(coin, null, 2));
-        console.log('MediaContent:', coin.mediaContent);
-        console.log('PreviewImage:', coin.mediaContent?.previewImage);
-        console.log('Avatar URL:', coin.avatarUrl);
-        console.log('Image URL:', coin.imageUrl);
-        console.log('Profile Image:', coin.profileImage);
-        
         // Get user's balance for this coin
         console.log('=== GETTING USER BALANCE IN getCreatorById ===');
         console.log('Looking for coinAddress:', coinAddress);
@@ -184,15 +168,8 @@ export const useZoraCreators = (): UseZoraCreatorsReturn => {
           name: coin.name || 'Unknown Creator',
           symbol: coin.symbol || 'UNKNOWN',
           description: coin.description || 'Creator on Zora',
-          profileImage: coin.avatarUrl || 
-                       coin.imageUrl || 
-                       coin.image || 
-                       coin.avatar || 
-                       coin.mediaContent?.avatar || 
-                       coin.mediaContent?.image || 
-                       coin.mediaContent?.previewImage?.medium || 
-                       coin.mediaContent?.previewImage?.small || 
-                       undefined,
+          profileImage: coin.mediaContent?.previewImage?.medium || 
+                       coin.mediaContent?.previewImage?.small,
           totalSupply: coin.totalSupply || '0',
           marketCap: coin.marketCap || '0',
           uniqueHolders: coin.uniqueHolders || 0,
