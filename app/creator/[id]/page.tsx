@@ -351,7 +351,7 @@ export default function CreatorPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:justify-start">
-                <button className="bg-black text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors cursor-pointer">
+                <button className="bg-gray-300 text-gray-500 px-8 py-3 rounded-full font-semibold text-lg cursor-not-allowed" disabled>
                   Buy ${creator.symbol} (coming soon)
                 </button>
               </div>
@@ -447,15 +447,20 @@ export default function CreatorPage() {
 
                         {/* Action Button */}
                         <button 
-                          className="w-full py-2 px-4 rounded-full font-semibold text-sm transition-colors cursor-pointer bg-black text-white hover:bg-gray-800"
+                          className={`w-full py-2 px-4 rounded-full font-semibold text-sm transition-colors ${
+                            isUnlocked 
+                              ? 'cursor-pointer bg-black text-white hover:bg-gray-800' 
+                              : 'cursor-not-allowed bg-gray-300 text-gray-500'
+                          }`}
                           onClick={() => {
                             if (isUnlocked) {
                               setSelectedContent(content);
                               setIsModalOpen(true);
                             }
                           }}
+                          disabled={!isUnlocked}
                         >
-                          {isUnlocked ? 'View Content' : `Buy ${requiredBalance} $${creator.symbol}`}
+                          {isUnlocked ? 'View Content' : `Buy $${creator.symbol} (coming soon)`}
                         </button>
                       </div>
                     </div>
