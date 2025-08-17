@@ -14,6 +14,8 @@ import { usePrivy } from '@privy-io/react-auth';
 import { createCreatorService } from '@/lib/services/creatorService';
 import { createContentService } from '@/lib/services/contentService';
 import { createBalanceUtils } from '@/lib/utils/balanceUtils';
+import ContentModal from '@/components/Content/ContentModal';
+
 export default function CreatorPage() {
   const params = useParams();
   const [contents, setContents] = useState<ContentItem[]>([]);
@@ -25,6 +27,10 @@ export default function CreatorPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [hasFetchedCreator, setHasFetchedCreator] = useState(false);
+  
+  // Content modal state
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const coinAddress = params.id as string;
   const { getCreatorById } = useZoraCreators();
@@ -127,7 +133,7 @@ export default function CreatorPage() {
       console.log('=== NOT FETCHING ZORA COINS ===');
       console.log('Reason: No smart wallet or coins already loaded');
     }
-  }, [zoraWallet?.smartWallet, zoraCoins.length, fetchZoraCoins]);
+  }, [zoraWallet, zoraCoins.length, fetchZoraCoins]);
 
   // Update user balance when zoraCoins are available
   useEffect(() => {
@@ -492,7 +498,8 @@ export default function CreatorPage() {
                           disabled={!isUnlocked}
                           onClick={() => {
                             if (isUnlocked) {
-                              window.open(contentService.buildContentDownloadUrl(content.ipfsCid), '_blank');
+                              setSelectedContent(content);
+                              setIsModalOpen(true);
                             }
                           }}
                         >
@@ -535,6 +542,16 @@ export default function CreatorPage() {
           )}
         </section>
       </main>
+
+      <ContentModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedContent(null);
+        }}
+        content={selectedContent}
+        contentService={contentService}
+      />
     </div>
   );
 }

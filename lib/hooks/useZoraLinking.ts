@@ -476,7 +476,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     } finally {
       setIsLoadingCoins(false);
     }
-  }, [zoraWallet, checkCoinBalance]);
+  }, [zoraWallet, checkCoinBalance, storedZoraWallet]);
 
   return {
     linkZora,
