@@ -3,7 +3,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { ContentItem } from '@/types';
-import Image from 'next/image';
 
 interface ContentModalProps {
   isOpen: boolean;
@@ -48,16 +47,15 @@ export default function ContentModal({
         {/* Image Content */}
         <div className="overflow-auto max-h-[calc(95vh-80px)]">
           <div className="relative w-full">
-            <Image
+            <img
               src={contentService.buildContentImageUrl(content.ipfsCid)}
               alt={content.filename}
-              width={0}
-              height={0}
-              sizes="95vw"
               className="w-full h-auto object-contain"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.src = '/api/placeholder/800/600';
+                target.onerror = null; // Prevent infinite loop
+                // Don't try to load placeholder, just hide the broken image
+                target.style.display = 'none';
               }}
             />
           </div>

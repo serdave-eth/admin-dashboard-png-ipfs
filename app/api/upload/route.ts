@@ -3,6 +3,7 @@ import { pinataClient } from '@/lib/pinata';
 import { prisma } from '@/lib/database';
 import { MAX_FILE_SIZE, ALLOWED_FILE_TYPES } from '@/types';
 import { verifyAuthToken } from '@/lib/auth';
+import { encryptBuffer, getEncryptionKey } from '@/lib/encryption';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,8 +45,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upload to Pinata
-    const { cid, size } = await pinataClient.uploadFile(file);
+    // Encrypt the file before uploading to IPFS
+    const encryptionKey = getEncryptionKey();
+    if (!encryptionKey) {
+      return NextResponse.json(
+        { success: false, error: 'Encryption key not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Convert file to buffer and encrypt
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const encryptedBuffer = encryptBuffer(fileBuffer, encryptionKey);
+    
+    // Create a new File object with the encrypted data
+    const encryptedFile = new File([new Uint8Array(encryptedBuffer)], file.name, { type: file.type });
+
+    // Upload encrypted file to Pinata
+    const { cid, size } = await pinataClient.uploadFile(encryptedFile);
 
     // Save to database
     const content = await prisma.content.create({

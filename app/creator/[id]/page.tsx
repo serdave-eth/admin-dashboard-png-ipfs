@@ -292,7 +292,7 @@ export default function CreatorPage() {
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 pointer-events-none" />
               {(creator.uniqueHolders || 0) > 100 && (
                 <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-black text-sm font-bold px-3 py-1 rounded-full">
-                  🔥 TOP CREATOR
+                  TOP CREATOR
                 </div>
               )}
             </div>
@@ -379,22 +379,19 @@ export default function CreatorPage() {
                   return (
                     <div key={content.id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300">
                       {/* Content Preview */}
-                      <div className="relative aspect-video overflow-hidden">
-                        {isUnlocked ? (
-                          <Image
-                            src={contentService.buildContentImageUrl(content.ipfsCid)}
-                            alt={content.filename}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-110"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = '/api/placeholder/300/200';
-                            }}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 bg-gray-200" />
-                        )}
-                        
+                      <div className="relative aspect-video overflow-hidden bg-gray-100">
+                        <img
+                          src={contentService.buildContentImageUrl(content.ipfsCid)}
+                          alt={content.filename}
+                          className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${
+                            !isUnlocked ? 'blur-xl' : ''
+                          }`}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null; // Prevent infinite loop
+                            target.style.display = 'none';
+                          }}
+                        />
                         {/* Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                         
@@ -408,11 +405,15 @@ export default function CreatorPage() {
 
                         {/* Lock Overlay for locked content */}
                         {!isUnlocked && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <div className="text-center">
-                              <Lock className="w-8 h-8 text-white mb-2 mx-auto" />
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                            <div className="text-center bg-black/80 rounded-xl p-4">
+                              <Lock className="w-10 h-10 text-yellow-400 mb-2 mx-auto" />
                               <p className="text-white text-sm font-bold">
-                                {requiredBalance} ${creator.symbol} required
+                                {requiredBalance} tokens required
+                              </p>
+                              <p className="text-white/70 text-xs mt-1">
+                                You have {balanceUtils.formatBalance(userBalance)}
+
                               </p>
                               {!user && (
                                 <p className="text-white/80 text-xs mt-1">

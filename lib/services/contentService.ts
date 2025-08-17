@@ -66,11 +66,11 @@ export class ContentService implements ContentServiceInterface {
   }
 
   buildContentImageUrl(ipfsCid: string): string {
-    return `${this.ipfsGateway}${ipfsCid}`;
+    return `/api/decrypt-image/${ipfsCid}`;
   }
 
   buildContentDownloadUrl(ipfsCid: string): string {
-    return `${this.ipfsGateway}${ipfsCid}`;
+    return `/api/decrypt-image/${ipfsCid}`;
   }
 
   getRequiredBalance(content: ContentItem): number {
