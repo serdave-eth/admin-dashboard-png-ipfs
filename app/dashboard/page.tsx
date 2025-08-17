@@ -46,27 +46,14 @@ export default function Dashboard() {
   }, [zoraWallet?.smartWallet, zoraCoins.length, fetchZoraCoins]);
 
   const renderCreatorsSection = () => (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-anton text-black mb-2 tracking-wide">YOUR CREATOR COINS</h1>
+    <div className="max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-black mb-2">YOUR CREATOR COINS</h1>
         <p className="text-gray-600">Manage the creator coins you own</p>
       </div>
 
       {hasZoraLinked && zoraWallet?.smartWallet ? (
         <>
-          {/* Refresh Coins Button */}
-          <div className="mb-6">
-            <p className="text-black/70 mb-2 font-mono text-sm">
-              Smart Wallet: {zoraWallet.smartWallet}
-            </p>
-            <button
-              onClick={fetchZoraCoins}
-              disabled={isLoadingCoins}
-              className="bg-black text-white px-6 py-3 rounded-full font-bold hover:bg-gray-800 transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 cursor-pointer"
-            >
-              {isLoadingCoins ? 'Loading...' : 'Refresh Coins'}
-            </button>
-          </div>
 
           {isLoadingCoins && (
             <div className="text-center py-8">
@@ -103,7 +90,7 @@ export default function Dashboard() {
                       <div className="bg-gray-50 rounded-lg p-2 text-center border border-gray-200">
                         <div className="text-gray-600">Your Balance</div>
                         <div className="text-black font-bold">
-                          {balance.balanceDecimal ? balance.balanceDecimal.toFixed(2) : '0'}
+                          {balance.balanceDecimal ? Math.floor(balance.balanceDecimal).toString() : '0'}
                         </div>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-2 text-center border border-gray-200">
@@ -131,9 +118,11 @@ export default function Dashboard() {
               ))}
             </div>
           ) : !isLoadingCoins && !coinsError ? (
-            <div className="text-center py-8">
-              <p className="text-black font-bold">No creator coins found.</p>
-              <p className="text-gray-600 text-sm mt-2">Create your first creator coin to see it here!</p>
+            <div className="text-center py-12">
+              <div className="max-w-md mx-auto">
+                <p className="text-xl font-semibold text-gray-800 mb-2">No creator coins found.</p>
+                <p className="text-gray-600">Create your first creator coin to see it here</p>
+              </div>
             </div>
           ) : null}
         </>
@@ -178,19 +167,6 @@ export default function Dashboard() {
 
       {hasZoraLinked && zoraWallet?.smartWallet ? (
         <>
-          {/* Refresh Coins Button */}
-          <div className="mb-6">
-            <p className="text-black/70 mb-2 font-mono text-sm">
-              Smart Wallet: {zoraWallet.smartWallet}
-            </p>
-            <button
-              onClick={fetchZoraCoins}
-              disabled={isLoadingCoins}
-              className="bg-black text-white px-6 py-3 rounded-full font-bold hover:bg-gray-800 transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 cursor-pointer"
-            >
-              {isLoadingCoins ? 'Loading...' : 'Refresh Coins'}
-            </button>
-          </div>
 
           {isLoadingCoins && (
             <div className="text-center py-8">
@@ -200,7 +176,7 @@ export default function Dashboard() {
           )}
           
           {zoraCoins.length > 0 && zoraCoins.filter(balance => !balance.isOwner).length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {zoraCoins.filter(balance => !balance.isOwner).map((balance, index) => (
                 <Link key={`supporter-${balance.id || balance.coin?.address || 'unknown'}-${index}`} href={`/creator/${balance.coin?.address}`}>
                   <div className="group bg-white rounded-2xl p-4 border border-gray-200 hover:border-black transition-all duration-300 hover:scale-105 cursor-pointer">
@@ -219,32 +195,11 @@ export default function Dashboard() {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                      <div className="bg-gray-50 rounded-lg p-2 text-center border border-gray-200">
-                        <div className="text-gray-600">Your Balance</div>
-                        <div className="text-black font-bold">
-                          {balance.balanceDecimal ? balance.balanceDecimal.toFixed(2) : '0'}
-                        </div>
+                    <div className="bg-gray-50 rounded-lg p-2 text-center border border-gray-200">
+                      <div className="text-gray-600">Your Balance</div>
+                      <div className="text-black font-bold">
+                        {balance.balanceDecimal ? Math.floor(balance.balanceDecimal).toLocaleString() : '0'}
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-2 text-center border border-gray-200">
-                        <div className="text-gray-600">Holders</div>
-                        <div className="text-black font-bold">{balance.coin?.uniqueHolders || 0}</div>
-                      </div>
-                    </div>
-                    
-                    {balance.coin?.marketCap && parseFloat(balance.coin.marketCap) > 0 && (
-                      <div className="text-xs text-center">
-                        <span className="text-black/70">Market Cap: </span>
-                        <span className="text-black font-bold">
-                          ${parseFloat(balance.coin.marketCap).toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                    
-                    <div className="mt-2 text-center">
-                      <span className="px-2 py-1 text-xs bg-black text-white rounded-full font-bold">
-                        💎 SUPPORTER
-                      </span>
                     </div>
                   </div>
                 </Link>
@@ -273,7 +228,7 @@ export default function Dashboard() {
   );
 
   const renderWalletsSection = () => (
-    <div>
+    <div className="max-w-2xl">
       <div className="mb-6">
         <h1 className="text-3xl font-anton text-black mb-2 tracking-wide">YOUR WALLETS</h1>
         <p className="text-gray-600">Manage your connected wallets and accounts</p>
@@ -283,12 +238,12 @@ export default function Dashboard() {
         {/* Primary Wallet */}
         {walletAddress && (
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-bold text-black mb-1">Backstage Wallet</h3>
-                <p className="text-gray-600 font-mono text-sm">{walletAddress}</p>
+                <p className="text-gray-600 font-mono text-sm break-all">{walletAddress}</p>
               </div>
-              <span className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-bold">
+              <span className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-bold flex-shrink-0 self-start sm:self-auto">
                 Connected
               </span>
             </div>
@@ -297,17 +252,17 @@ export default function Dashboard() {
 
         {/* Zora Wallet */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
               <h3 className="font-bold text-black mb-1">Zora Wallet</h3>
               {hasZoraLinked && zoraWallet?.smartWallet ? (
-                <p className="text-gray-600 font-mono text-sm">{zoraWallet.smartWallet}</p>
+                <p className="text-gray-600 font-mono text-sm break-all">{zoraWallet.smartWallet}</p>
               ) : (
                 <p className="text-gray-500 text-sm">Not connected</p>
               )}
             </div>
             {hasZoraLinked && zoraWallet?.smartWallet ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-shrink-0">
                 <span className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-bold">
                   Connected
                 </span>
@@ -323,7 +278,7 @@ export default function Dashboard() {
               <button
                 onClick={linkZora}
                 disabled={isLinking}
-                className="px-4 py-2 bg-black text-white rounded-full text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 cursor-pointer"
+                className="px-4 py-2 bg-black text-white rounded-full text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 cursor-pointer flex-shrink-0 self-start sm:self-auto"
               >
                 {isLinking ? 'Linking...' : 'Connect'}
               </button>
@@ -340,7 +295,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-white">
         <div className="flex">
           {/* Left Sidebar Navigation */}
-          <div className="w-64 bg-white border-r border-gray-200 fixed top-16 h-auto flex flex-col" style={{left: 'max(1rem, calc((100vw - 80rem) / 2 + 1rem))'}}>
+          <div className="hidden md:block w-64 bg-white border-r border-gray-200 fixed top-16 left-0 h-auto flex flex-col">
             <nav className="px-8 py-6">
               <div className="space-y-2">
                 <button
@@ -380,8 +335,43 @@ export default function Dashboard() {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 pt-16" style={{marginLeft: 'max(17rem, calc((100vw - 80rem) / 2 + 17rem))', marginRight: 'max(1rem, calc((100vw - 80rem) / 2 + 1rem))'}}>
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex-1 pt-16 ml-0 md:ml-64">
+            {/* Mobile Navigation Tabs */}
+            <div className="md:hidden bg-white border-b border-gray-200 px-4 py-2">
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => setActiveSection('creators')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    activeSection === 'creators'
+                      ? 'bg-black text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Creator
+                </button>
+                <button
+                  onClick={() => setActiveSection('supporters')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    activeSection === 'supporters'
+                      ? 'bg-black text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Supporter
+                </button>
+                <button
+                  onClick={() => setActiveSection('wallets')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    activeSection === 'wallets'
+                      ? 'bg-black text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Wallets
+                </button>
+              </div>
+            </div>
+            <main className={`w-full px-4 sm:px-6 lg:px-8 py-8 ${activeSection === 'creators' ? 'pr-4' : 'pr-24'} md:pr-48 lg:pr-64 xl:pr-80`}>
               {activeSection === 'creators' && renderCreatorsSection()}
               {activeSection === 'supporters' && renderSupportersSection()}
               {activeSection === 'wallets' && renderWalletsSection()}
