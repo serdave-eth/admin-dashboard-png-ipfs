@@ -81,7 +81,7 @@ export default function ExplorePage() {
       });
 
       const results = await Promise.all(creatorPromises);
-      const validCreators = results.filter((creator): creator is Creator => creator !== null);
+      const validCreators = results.filter(creator => creator !== null) as Creator[];
       setCreators(validCreators);
     } catch (error) {
       console.error('Failed to fetch creator data:', error);
