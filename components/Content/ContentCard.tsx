@@ -16,7 +16,7 @@ export default function ContentCard({
   const [copied, setCopied] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const ipfsGatewayUrl = `https://gateway.pinata.cloud/ipfs/${item.ipfsCid}`;
+  const decryptedImageUrl = `/api/decrypt-image/${item.ipfsCid}`;
 
   const copyToClipboard = async () => {
     try {
@@ -129,13 +129,13 @@ export default function ContentCard({
 
       <div className="mt-4 pt-3 border-t border-gray-100">
         <a
-          href={ipfsGatewayUrl}
+          href={decryptedImageUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
         >
           <ExternalLink className="w-4 h-4" />
-          View on IPFS
+          View Content
         </a>
       </div>
 
