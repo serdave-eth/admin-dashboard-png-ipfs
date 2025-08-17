@@ -1,19 +1,22 @@
 'use client';
 
 import { usePrivy } from '@privy-io/react-auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import TopCreators from '@/components/TopCreators';
 
 export default function Home() {
   const { authenticated } = usePrivy();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (authenticated) {
+    // Only redirect if user is authenticated AND they didn't explicitly navigate here via the logo
+    const fromLogo = searchParams.get('from') === 'logo';
+    if (authenticated && !fromLogo) {
       router.push('/dashboard');
     }
-  }, [authenticated, router]);
+  }, [authenticated, router, searchParams]);
 
   return (
     <div className="min-h-screen bg-white">

@@ -41,7 +41,7 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
             <h1 
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/?from=logo')}
               className="text-2xl font-bold text-black tracking-tight cursor-pointer hover:text-gray-700 transition-colors"
             >
               Backstage
