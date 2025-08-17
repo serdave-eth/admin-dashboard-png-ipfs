@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import ProtectedRoute from '@/components/Auth/ProtectedRoute';
-import Header from '@/components/UI/Header';
 import UploadForm from '@/components/Upload/UploadForm';
 import ContentFeed from '@/components/Content/ContentFeed';
 import ZoraLinkingModal from '@/components/Auth/ZoraLinkingModal';
@@ -59,8 +58,6 @@ export default function Dashboard() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen" style={{backgroundColor: '#F6CA46'}}>
-        <Header />
-        
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1 space-y-6">
@@ -100,7 +97,7 @@ export default function Dashboard() {
                   {zoraCoins.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {zoraCoins.map((balance, index) => (
-                        <Link key={balance.id || index} href={`/creator/${balance.coin?.address}`}>
+                        <Link key={`${balance.id || balance.coin?.address || 'unknown'}-${index}`} href={`/creator/${balance.coin?.address}`}>
                           <div className="group bg-black/10 rounded-2xl p-4 border border-black/20 hover:border-black/30 transition-all duration-300 hover:scale-105 cursor-pointer">
                             <div className="flex items-center gap-3 mb-3">
                               <CreatorAvatar

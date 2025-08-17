@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Lock, Unlock, Users, TrendingUp, Coins } from 'lucide-react';
+import { Lock, Unlock, Users, TrendingUp, Coins } from 'lucide-react';
 import { getCoinsMostValuable, getCoinsTopGainers } from '@zoralabs/coins-sdk';
-import { usePrivy } from '@privy-io/react-auth';
-import LoginButton from '@/components/Auth/LoginButton';
 
 interface Creator {
   id: string;
@@ -23,7 +21,6 @@ interface Creator {
 
 export default function ExplorePage() {
   const router = useRouter();
-  const { authenticated } = usePrivy();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'valuable' | 'gainers' | 'active'>('valuable');
@@ -141,63 +138,6 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h1 
-                onClick={() => router.push('/')}
-                className="text-2xl font-bold text-black tracking-tight cursor-pointer hover:text-gray-700 transition-colors"
-              >
-                Backstage
-              </h1>
-            </div>
-            
-            {/* Navigation Menu */}
-            <div className="flex items-center space-x-8">
-              <button
-                onClick={() => router.push('/explore')}
-                className="text-black font-medium hover:text-gray-600 transition-colors"
-              >
-                Explore
-              </button>
-              <button
-                onClick={() => router.push('/create')}
-                className="text-black font-medium hover:text-gray-600 transition-colors"
-              >
-                Create
-              </button>
-              <button
-                onClick={() => router.push('/portfolio')}
-                className="text-black font-medium hover:text-gray-600 transition-colors"
-              >
-                Portfolio
-              </button>
-            </div>
-            
-            {/* Dashboard and Connect Wallet Buttons */}
-            <div className="flex items-center space-x-4">
-              {authenticated && (
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="bg-black text-white px-6 py-2 rounded-full font-semibold hover:bg-gray-800 transition-colors"
-                >
-                  Dashboard
-                </button>
-              )}
-              <LoginButton />
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Info Banner */}
