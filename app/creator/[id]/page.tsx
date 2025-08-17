@@ -1,0 +1,446 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { useZoraCreators, ZoraCreatorData } from '@/lib/hooks/useZoraCreators';
+import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
+import { ContentItem } from '@/types';
+import CreatorAvatar from '@/components/UI/CreatorAvatar';
+import Header from '@/components/UI/Header';
+import Image from 'next/image';
+import { Lock, Download } from 'lucide-react';
+import { usePrivy } from '@privy-io/react-auth';
+import { createCreatorService } from '@/lib/services/creatorService';
+import { createContentService } from '@/lib/services/contentService';
+import { createBalanceUtils } from '@/lib/utils/balanceUtils';
+export default function CreatorPage() {
+  const params = useParams();
+  const [contents, setContents] = useState<ContentItem[]>([]);
+  const [displayedContents, setDisplayedContents] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
+  const [creator, setCreator] = useState<ZoraCreatorData | null>(null);
+  const [isLoadingCreator, setIsLoadingCreator] = useState(true);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [hasFetchedCreator, setHasFetchedCreator] = useState(false);
+  
+  const coinAddress = params.id as string;
+  const { getCreatorById } = useZoraCreators();
+  const { zoraCoins, zoraWallet } = useZoraLinking();
+  const { login, ready, user } = usePrivy();
+  const userBalance = creator?.userBalanceDecimal || 0;
+  
+  // Initialize services
+  const creatorService = createCreatorService(getCreatorById);
+  const contentService = createContentService();
+  const balanceUtils = createBalanceUtils();
+  
+  // Get user's wallet address if available
+  const userWalletAddress = balanceUtils.getUserWalletAddress(user);
+
+  // Function to check balance using the balance utils
+  const getUserBalanceForCoin = useCallback((coinAddress: string) => {
+    return balanceUtils.getUserBalanceForCoin(coinAddress, zoraCoins);
+  }, [zoraCoins, balanceUtils]);
+  
+  // Debug user balance calculation
+  useEffect(() => {
+    if (creator) {
+      balanceUtils.debugBalanceCalculation(creator, userBalance);
+    }
+  }, [creator, userBalance, balanceUtils]);
+
+  // Fetch creator data using creator service
+  useEffect(() => {
+    const fetchCreator = async () => {
+      if (hasFetchedCreator) return;
+      
+      setIsLoadingCreator(true);
+      try {
+        console.log('User wallet address:', userWalletAddress);
+        
+        const creatorData = await creatorService.fetchCreatorById(coinAddress);
+        
+        if (creatorData) {
+          setCreator(creatorData);
+          setHasFetchedCreator(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch creator:', error);
+      } finally {
+        setIsLoadingCreator(false);
+      }
+    };
+
+    if (coinAddress && !hasFetchedCreator) {
+      fetchCreator();
+    }
+  }, [coinAddress, creatorService, hasFetchedCreator, userWalletAddress]);
+
+  // Update user balance when zoraCoins are available
+  useEffect(() => {
+    if (creator && coinAddress && zoraCoins.length > 0) {
+      console.log('=== UPDATING USER BALANCE FROM ZORA COINS ===');
+      const balanceData = getUserBalanceForCoin(coinAddress);
+      
+      const updatedCreator = creatorService.updateCreatorBalance(creator, balanceData);
+      setCreator(updatedCreator);
+    }
+  }, [creator, coinAddress, zoraCoins, getUserBalanceForCoin, creatorService]);
+
+  // Fetch content using content service
+  const fetchContent = useCallback(async (cursor?: string) => {
+    if (!coinAddress) return;
+    
+    try {
+      setLoading(true);
+      
+      const response = await contentService.fetchCreatorContent({
+        coinAddress,
+        cursor
+      });
+      
+      const newContents = response.items;
+      
+      if (cursor) {
+        // Append to existing content
+        setContents(prev => [...prev, ...newContents]);
+        setDisplayedContents(prev => [...prev, ...newContents]);
+      } else {
+        // Replace content
+        setContents(newContents);
+        setDisplayedContents(newContents);
+      }
+      
+      setNextCursor(response.nextCursor || null);
+      setHasMore(response.hasMore);
+    } catch (error) {
+      console.error('Failed to fetch content:', error);
+    } finally {
+      setLoading(false);
+      setIsLoadingContent(false);
+    }
+  }, [coinAddress, contentService]);
+
+  // Fetch content when component mounts - only depend on coinAddress
+  useEffect(() => {
+    if (coinAddress) {
+      fetchContent();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coinAddress]); // Intentionally omit fetchContent to prevent circular calls
+
+  const loadMore = useCallback(() => {
+    if (loading || !hasMore || !nextCursor) return;
+    fetchContent(nextCursor);
+  }, [loading, hasMore, nextCursor, fetchContent]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100) {
+        loadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMore]);
+
+  if (!ready || isLoadingCreator) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black mb-4"></div>
+            <p className="text-black font-bold">
+              {!ready ? 'Initializing...' : 'Loading creator information...'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!creator) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-black font-bold text-xl mb-2">Creator not found</p>
+            <p className="text-black/70 mb-4">The creator with this coin address could not be found.</p>
+            <Link href="/dashboard" className="bg-black text-white px-6 py-3 rounded-full font-bold hover:bg-gray-800 transition-colors">
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+
+      <Header />
+
+      <main className="relative z-10 container mx-auto px-6 py-12">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-8">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+            <div className="relative">
+              <CreatorAvatar
+                src={creator.profileImage}
+                alt={creator.name}
+                symbol={creator.symbol || '?'}
+                size={128}
+              />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 pointer-events-none" />
+              {(creator.uniqueHolders || 0) > 100 && (
+                <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-black text-sm font-bold px-3 py-1 rounded-full">
+                  🔥 TOP CREATOR
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-5xl font-anton text-black mb-2 tracking-wide">{creator.name.toUpperCase()}</h1>
+              <p className="text-xl text-black/70 mb-6">${creator.symbol}</p>
+              {creator.description && (
+                <p className="text-black/60 mb-6 max-w-2xl">{creator.description}</p>
+              )}
+              
+              <div className="grid grid-cols-3 gap-6 mb-4">
+                <div>
+                  <p className="text-gray-500 text-sm flex items-center gap-1">
+                    Market Cap
+                  </p>
+                  <p className="font-semibold text-lg">
+                    {creator.marketCap ? (() => {
+                      const mcap = parseFloat(creator.marketCap);
+                      if (mcap >= 1000000) return `$${(mcap / 1000000).toFixed(1)}M`;
+                      if (mcap >= 1000) return `$${(mcap / 1000).toFixed(0)}K`;
+                      return `$${mcap.toFixed(0)}`;
+                    })() : '$0'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm flex items-center gap-1">
+                    Holders
+                  </p>
+                  <p className="font-semibold text-lg">{(creator.uniqueHolders || 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm flex items-center gap-1">
+                    Price
+                  </p>
+                  <p className="font-semibold text-lg">
+                    ${creator.price ? creator.price.toFixed(4) : '0.0000'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:justify-start">
+                {!zoraWallet?.smartWallet ? (
+                  <button 
+                    onClick={login}
+                    className="bg-blue-100 border border-blue-600/30 rounded-full px-6 py-3 hover:bg-blue-200 transition-colors"
+                  >
+                    <p className="text-blue-700 font-bold">Login to check balance</p>
+                  </button>
+                ) : userBalance > 0 ? (
+                  <div className="bg-green-100 border border-green-600/30 rounded-full px-6 py-3">
+                    <p className="text-green-700 font-bold flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
+                      You own {balanceUtils.formatBalance(userBalance)} ${creator.symbol}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-gray-100 rounded-full px-6 py-3 border border-gray-200">
+                    <p className="text-gray-600">You don&apos;t own any ${creator.symbol}</p>
+                  </div>
+                )}
+                <button className="bg-black text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors">
+                  Buy ${creator.symbol}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-4xl font-anton text-black mb-2 tracking-wide">CREATOR CONTENT</h2>
+              <p className="text-black/70">
+                {isLoadingContent ? 'Loading content...' : 
+                 contents.length === 0 ? 'No content available' : 
+                 `${contents.length} content ${contents.length === 1 ? 'item' : 'items'}`}
+              </p>
+            </div>
+          </div>
+          
+          {contents.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8">
+              <div className="flex items-start gap-4">
+                <span className="text-3xl">📁</span>
+                <div>
+                  <h3 className="text-blue-700 font-bold text-lg mb-1">Content Access</h3>
+                  <p className="text-gray-600">
+                    Content access is determined by your ${creator.symbol} token balance and the minimum requirements set by the creator.
+                    You currently have {balanceUtils.formatBalance(userBalance)} tokens.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isLoadingContent ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-200 animate-pulse">
+                  <div className="aspect-video bg-gray-200" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-3 bg-gray-200 rounded w-full" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayedContents.length > 0 ? (
+                displayedContents.map((content) => {
+                  const requiredBalance = contentService.getRequiredBalance(content);
+                  const isUnlocked = contentService.checkContentAccess(content, userBalance);
+                  
+                  return (
+                    <div key={content.id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300">
+                      {/* Content Preview */}
+                      <div className="relative aspect-video overflow-hidden">
+                        <Image
+                          src={contentService.buildContentImageUrl(content.ipfsCid)}
+                          alt={content.filename}
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-110"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/api/placeholder/300/200';
+                          }}
+                        />
+                        
+                        {/* Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        
+                        {/* Content Type Icon */}
+                        <div className="absolute top-3 left-3 bg-green-500 rounded-full p-2">
+                          <Download className="w-4 h-4 text-white" />
+                        </div>
+
+                        {/* Premium Badge */}
+                        {requiredBalance > 0 && (
+                          <div className="absolute top-3 right-3 bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-bold">
+                            PREMIUM
+                          </div>
+                        )}
+
+                        {/* Lock Overlay for locked content */}
+                        {!isUnlocked && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <div className="text-center">
+                              <Lock className="w-8 h-8 text-white mb-2 mx-auto" />
+                              <p className="text-white text-sm font-bold">
+                                {requiredBalance} tokens required
+                              </p>
+                              <p className="text-white/70 text-xs">
+                                You have {balanceUtils.formatBalance(userBalance)}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* File Size in bottom corner */}
+                        <div className="absolute bottom-3 left-3 text-white text-xs bg-black/50 px-2 py-1 rounded">
+                          {contentService.formatFileSize(content.fileSize.toString())}
+                        </div>
+                      </div>
+
+                      {/* Content Info */}
+                      <div className="p-4">
+                        <h3 className="font-anton text-lg text-black mb-2 tracking-wide truncate">
+                          {content.filename.toUpperCase()}
+                        </h3>
+                        <p className="text-black/70 text-sm mb-3">
+                          {content.fileType.toUpperCase()} • {contentService.formatCreatedDate(content.createdAt)}
+                        </p>
+
+                        {/* Access Requirements */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            {isUnlocked ? (
+                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            ) : (
+                              <Lock className="w-3 h-3 text-black/50" />
+                            )}
+                            <span className="text-xs text-black/70">
+                              {isUnlocked ? 'Unlocked' : `${requiredBalance} tokens needed`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Action Button */}
+                        <button 
+                          className={`w-full py-2 px-4 rounded-full font-semibold text-sm transition-colors ${
+                            isUnlocked 
+                              ? 'bg-black text-white hover:bg-gray-800' 
+                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          }`}
+                          disabled={!isUnlocked}
+                          onClick={() => {
+                            if (isUnlocked) {
+                              window.open(contentService.buildContentDownloadUrl(content.ipfsCid), '_blank');
+                            }
+                          }}
+                        >
+                          {isUnlocked ? 'View Content' : 'Locked'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-600 text-lg mb-2">No content available</p>
+                  <p className="text-gray-500 text-sm">This creator hasn&apos;t uploaded any content yet</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {loading && (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+            </div>
+          )}
+
+          {!loading && hasMore && contents.length > 0 && (
+            <div className="text-center py-8">
+              <button 
+                onClick={loadMore}
+                className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors"
+              >
+                Load More Content
+              </button>
+            </div>
+          )}
+          
+          {!hasMore && contents.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-500">You&apos;ve reached the end of the content</p>
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
