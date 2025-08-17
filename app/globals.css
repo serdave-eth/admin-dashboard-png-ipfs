@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #F6CA46;
+  --background: #ffffff;
   --foreground: #000000;
 }
 
@@ -11,7 +11,7 @@
 }
 
 body {
-  background: #F6CA46;
+  background: #ffffff;
   color: var(--foreground);
   overflow-x: hidden;
 }
