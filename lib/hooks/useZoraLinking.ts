@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { usePrivy, useCrossAppAccounts } from '@privy-io/react-auth';
 import { toast } from 'sonner';
 import { getProfileBalances } from '@zoralabs/coins-sdk';
@@ -153,12 +153,14 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
 
   const zoraWalletAddress = getZoraWalletAddress();
   
-  const zoraWallet: ZoraWallet | null = zoraAccount ? {
-    // Prefer the stored wallet address from database, fall back to detected address
-    address: storedZoraWallet || zoraWalletAddress || 'Zora Account Linked (Address Not Available)',
-    appId: process.env.NEXT_PUBLIC_ZORA_APP_ID || 'clpgf04wn04hnkw0fv1m11mnb',
-    smartWallet: zoraAccount.smartWallets?.[0]?.address || undefined
-  } : null;
+  const zoraWallet: ZoraWallet | null = useMemo(() => {
+    return zoraAccount ? {
+      // Prefer the stored wallet address from database, fall back to detected address
+      address: storedZoraWallet || zoraWalletAddress || 'Zora Account Linked (Address Not Available)',
+      appId: process.env.NEXT_PUBLIC_ZORA_APP_ID || 'clpgf04wn04hnkw0fv1m11mnb',
+      smartWallet: zoraAccount.smartWallets?.[0]?.address || undefined
+    } : null;
+  }, [zoraAccount, storedZoraWallet, zoraWalletAddress]);
 
   const hasZoraLinked = Boolean(zoraWallet) || Boolean(zoraAccount);
 
@@ -444,7 +446,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     } finally {
       setIsLoadingCoins(false);
     }
-  }, [zoraWallet?.smartWallet, checkCoinOwnership]);
+  }, [zoraWallet, checkCoinOwnership]);
 
   return {
     linkZora,

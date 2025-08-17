@@ -4,10 +4,10 @@ import { Content } from '@prisma/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { coinAddress: string } }
+  { params }: { params: Promise<{ coinAddress: string }> }
 ) {
   try {
-    const { coinAddress } = params;
+    const { coinAddress } = await params;
     
     if (!coinAddress) {
       return NextResponse.json(

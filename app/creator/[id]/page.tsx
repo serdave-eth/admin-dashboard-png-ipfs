@@ -9,10 +9,11 @@ import { ContentItem } from '@/types';
 import CreatorAvatar from '@/components/UI/CreatorAvatar';
 import Header from '@/components/UI/Header';
 import Image from 'next/image';
-import { Heart, Eye, Lock, Download } from 'lucide-react';
+import { Lock, Download } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
-import { getProfileBalances } from '@zoralabs/coins-sdk';
-
+import { createCreatorService } from '@/lib/services/creatorService';
+import { createContentService } from '@/lib/services/contentService';
+import { createBalanceUtils } from '@/lib/utils/balanceUtils';
 export default function CreatorPage() {
   const params = useParams();
   const [contents, setContents] = useState<ContentItem[]>([]);
@@ -27,71 +28,42 @@ export default function CreatorPage() {
   
   const coinAddress = params.id as string;
   const { getCreatorById } = useZoraCreators();
-  const { zoraCoins, isLoadingCoins, zoraWallet } = useZoraLinking();
+  const { zoraCoins, zoraWallet } = useZoraLinking();
   const { login, ready, user } = usePrivy();
   const userBalance = creator?.userBalanceDecimal || 0;
   
+  // Initialize services
+  const creatorService = createCreatorService(getCreatorById);
+  const contentService = createContentService();
+  const balanceUtils = createBalanceUtils();
+  
   // Get user's wallet address if available
-  const userWalletAddress = user?.wallet?.address || user?.linkedAccounts?.find(account => account.type === 'wallet')?.address;
+  const userWalletAddress = balanceUtils.getUserWalletAddress(user);
 
-  // Function to check balance using the same logic as dashboard
+  // Function to check balance using the balance utils
   const getUserBalanceForCoin = useCallback((coinAddress: string) => {
-    console.log('=== GETTING USER BALANCE FOR COIN ===');
-    console.log('Looking for coinAddress:', coinAddress);
-    console.log('Available zoraCoins:', zoraCoins?.length || 0);
-    
-    // Use the same logic as dashboard - check the zoraCoins array
-    const userCoin = zoraCoins.find(zc => zc.coin?.address?.toLowerCase() === coinAddress?.toLowerCase());
-    console.log('Found userCoin in zoraCoins:', userCoin);
-    
-    if (userCoin) {
-      return {
-        rawBalance: userCoin.balance || '0',
-        balanceDecimal: userCoin.balanceDecimal || 0,
-        decimals: userCoin.decimals || 18
-      };
-    }
-    
-    console.log('No balance found for this coin in zoraCoins');
-    return {
-      rawBalance: '0',
-      balanceDecimal: 0,
-      decimals: 18
-    };
-  }, [zoraCoins]);
+    return balanceUtils.getUserBalanceForCoin(coinAddress, zoraCoins);
+  }, [zoraCoins, balanceUtils]);
   
   // Debug user balance calculation
   useEffect(() => {
     if (creator) {
-      console.log('=== USER BALANCE CALCULATION DEBUG ===');
-      console.log('creator object:', creator);
-      console.log('creator.userBalance (raw):', creator.userBalance);
-      console.log('creator.userBalanceDecimal:', creator.userBalanceDecimal);
-      console.log('calculated userBalance for display:', userBalance);
+      balanceUtils.debugBalanceCalculation(creator, userBalance);
     }
-  }, [creator, userBalance]);
+  }, [creator, userBalance, balanceUtils]);
 
-  // Fetch creator data - simplified to just get basic info
+  // Fetch creator data using creator service
   useEffect(() => {
     const fetchCreator = async () => {
-      if (hasFetchedCreator) return; // Prevent refetching
+      if (hasFetchedCreator) return;
       
       setIsLoadingCreator(true);
       try {
-        console.log('====== CREATOR PAGE DEBUG ======');
-        console.log('Target coin address from URL:', coinAddress);
         console.log('User wallet address:', userWalletAddress);
         
-        // Get basic creator info from API
-        const creatorData = await getCreatorById(coinAddress);
-        console.log('Raw API creator data:', creatorData);
+        const creatorData = await creatorService.fetchCreatorById(coinAddress);
         
         if (creatorData) {
-          // Set basic creator data without user balance initially
-          creatorData.userBalance = '0';
-          creatorData.userBalanceDecimal = 0;
-          
-          console.log('Setting basic creator data:', creatorData);
           setCreator(creatorData);
           setHasFetchedCreator(true);
         }
@@ -105,7 +77,7 @@ export default function CreatorPage() {
     if (coinAddress && !hasFetchedCreator) {
       fetchCreator();
     }
-  }, [coinAddress, getCreatorById, hasFetchedCreator, userWalletAddress]);
+  }, [coinAddress, creatorService, hasFetchedCreator, userWalletAddress]);
 
   // Update user balance when zoraCoins are available
   useEffect(() => {
@@ -113,62 +85,52 @@ export default function CreatorPage() {
       console.log('=== UPDATING USER BALANCE FROM ZORA COINS ===');
       const balanceData = getUserBalanceForCoin(coinAddress);
       
-      setCreator(prevCreator => ({
-        ...prevCreator!,
-        userBalance: balanceData.rawBalance,
-        userBalanceDecimal: balanceData.balanceDecimal,
-        decimals: balanceData.decimals,
-      }));
+      const updatedCreator = creatorService.updateCreatorBalance(creator, balanceData);
+      setCreator(updatedCreator);
     }
-  }, [creator, coinAddress, zoraCoins, getUserBalanceForCoin]);
+  }, [creator, coinAddress, zoraCoins, getUserBalanceForCoin, creatorService]);
 
-  // Fetch real content from database
+  // Fetch content using content service
   const fetchContent = useCallback(async (cursor?: string) => {
     if (!coinAddress) return;
     
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        limit: '20'
+      
+      const response = await contentService.fetchCreatorContent({
+        coinAddress,
+        cursor
       });
       
+      const newContents = response.items;
+      
       if (cursor) {
-        params.append('cursor', cursor);
+        // Append to existing content
+        setContents(prev => [...prev, ...newContents]);
+        setDisplayedContents(prev => [...prev, ...newContents]);
+      } else {
+        // Replace content
+        setContents(newContents);
+        setDisplayedContents(newContents);
       }
       
-      const response = await fetch(`/api/content/creator/${coinAddress}?${params}`);
-      const data = await response.json();
-      
-      if (data.success !== false) {
-        const newContents = data.items || [];
-        
-        if (cursor) {
-          // Append to existing content
-          setContents(prev => [...prev, ...newContents]);
-          setDisplayedContents(prev => [...prev, ...newContents]);
-        } else {
-          // Replace content
-          setContents(newContents);
-          setDisplayedContents(newContents);
-        }
-        
-        setNextCursor(data.nextCursor);
-        setHasMore(data.hasMore);
-      }
+      setNextCursor(response.nextCursor || null);
+      setHasMore(response.hasMore);
     } catch (error) {
       console.error('Failed to fetch content:', error);
     } finally {
       setLoading(false);
       setIsLoadingContent(false);
     }
-  }, [coinAddress]);
+  }, [coinAddress, contentService]);
 
   // Fetch content when component mounts - only depend on coinAddress
   useEffect(() => {
     if (coinAddress) {
       fetchContent();
     }
-  }, [coinAddress]); // Remove fetchContent dependency to prevent circular calls
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coinAddress]); // Intentionally omit fetchContent to prevent circular calls
 
   const loadMore = useCallback(() => {
     if (loading || !hasMore || !nextCursor) return;
@@ -188,7 +150,7 @@ export default function CreatorPage() {
 
   if (!ready || isLoadingCreator) {
     return (
-      <div className="min-h-screen" style={{backgroundColor: '#F6CA46'}}>
+      <div className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black mb-4"></div>
@@ -203,12 +165,12 @@ export default function CreatorPage() {
 
   if (!creator) {
     return (
-      <div className="min-h-screen" style={{backgroundColor: '#F6CA46'}}>
+      <div className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <p className="text-black font-bold text-xl mb-2">Creator not found</p>
             <p className="text-black/70 mb-4">The creator with this coin address could not be found.</p>
-            <Link href="/dashboard" className="bg-black text-yellow-400 px-6 py-3 rounded-full font-bold hover:scale-105 transition-all duration-200">
+            <Link href="/dashboard" className="bg-black text-white px-6 py-3 rounded-full font-bold hover:bg-gray-800 transition-colors">
               Back to Dashboard
             </Link>
           </div>
@@ -218,17 +180,12 @@ export default function CreatorPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#F6CB47'}}>
-      {/* Animated background */}
-      <div className="fixed inset-0 opacity-20">
-        <div className="absolute top-40 left-10 w-96 h-96 bg-black rounded-full mix-blend-multiply filter blur-3xl animate-float" />
-        <div className="absolute bottom-40 right-10 w-96 h-96 bg-orange-600 rounded-full mix-blend-multiply filter blur-3xl animate-float animation-delay-2000" />
-      </div>
+    <div className="min-h-screen bg-gray-50">
 
       <Header />
 
       <main className="relative z-10 container mx-auto px-6 py-12">
-        <div className="bg-black/10 rounded-3xl p-8 mb-12 border border-black/20">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="relative">
               <CreatorAvatar
@@ -252,20 +209,12 @@ export default function CreatorPage() {
                 <p className="text-black/60 mb-6 max-w-2xl">{creator.description}</p>
               )}
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                <div className="bg-black/10 rounded-xl p-3 border border-black/20">
-                  <p className="text-black/70 text-xs uppercase tracking-wider">Symbol</p>
-                  <p className="text-blue-700 font-bold text-xl">${creator.symbol}</p>
-                </div>
-                <div className="bg-black/10 rounded-xl p-3 border border-black/20">
-                  <p className="text-black/70 text-xs uppercase tracking-wider">Price</p>
-                  <p className="text-green-700 font-bold text-xl">
-                    ${creator.price ? creator.price.toFixed(4) : '0.0000'}
+              <div className="grid grid-cols-3 gap-6 mb-4">
+                <div>
+                  <p className="text-gray-500 text-sm flex items-center gap-1">
+                    Market Cap
                   </p>
-                </div>
-                <div className="bg-black/10 rounded-xl p-3 border border-black/20">
-                  <p className="text-black/70 text-xs uppercase tracking-wider">Market Cap</p>
-                  <p className="text-black font-bold text-xl">
+                  <p className="font-semibold text-lg">
                     {creator.marketCap ? (() => {
                       const mcap = parseFloat(creator.marketCap);
                       if (mcap >= 1000000) return `$${(mcap / 1000000).toFixed(1)}M`;
@@ -274,9 +223,19 @@ export default function CreatorPage() {
                     })() : '$0'}
                   </p>
                 </div>
-                <div className="bg-black/10 rounded-xl p-3 border border-black/20">
-                  <p className="text-black/70 text-xs uppercase tracking-wider">Holders</p>
-                  <p className="text-black font-bold text-xl">{(creator.uniqueHolders || 0).toLocaleString()}</p>
+                <div>
+                  <p className="text-gray-500 text-sm flex items-center gap-1">
+                    Holders
+                  </p>
+                  <p className="font-semibold text-lg">{(creator.uniqueHolders || 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm flex items-center gap-1">
+                    Price
+                  </p>
+                  <p className="font-semibold text-lg">
+                    ${creator.price ? creator.price.toFixed(4) : '0.0000'}
+                  </p>
                 </div>
               </div>
 
@@ -292,15 +251,15 @@ export default function CreatorPage() {
                   <div className="bg-green-100 border border-green-600/30 rounded-full px-6 py-3">
                     <p className="text-green-700 font-bold flex items-center gap-2">
                       <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
-                      You own {userBalance.toFixed(2)} ${creator.symbol}
+                      You own {balanceUtils.formatBalance(userBalance)} ${creator.symbol}
                     </p>
                   </div>
                 ) : (
-                  <div className="bg-black/10 rounded-full px-6 py-3 border border-black/20">
-                    <p className="text-black/70">You don&apos;t own any ${creator.symbol}</p>
+                  <div className="bg-gray-100 rounded-full px-6 py-3 border border-gray-200">
+                    <p className="text-gray-600">You don&apos;t own any ${creator.symbol}</p>
                   </div>
                 )}
-                <button className="bg-black text-yellow-400 px-8 py-3 rounded-full font-bold hover:scale-105 transition-all duration-200">
+                <button className="bg-black text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors">
                   Buy ${creator.symbol}
                 </button>
               </div>
@@ -321,14 +280,14 @@ export default function CreatorPage() {
           </div>
           
           {contents.length > 0 && (
-            <div className="bg-blue-100 border border-blue-500/30 rounded-2xl p-6 mb-8">
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8">
               <div className="flex items-start gap-4">
                 <span className="text-3xl">📁</span>
                 <div>
                   <h3 className="text-blue-700 font-bold text-lg mb-1">Content Access</h3>
-                  <p className="text-black/70">
+                  <p className="text-gray-600">
                     Content access is determined by your ${creator.symbol} token balance and the minimum requirements set by the creator.
-                    You currently have {userBalance.toFixed(2)} tokens.
+                    You currently have {balanceUtils.formatBalance(userBalance)} tokens.
                   </p>
                 </div>
               </div>
@@ -338,12 +297,12 @@ export default function CreatorPage() {
           {isLoadingContent ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-black/10 rounded-2xl overflow-hidden border border-black/20 animate-pulse">
-                  <div className="aspect-video bg-black/20" />
+                <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-200 animate-pulse">
+                  <div className="aspect-video bg-gray-200" />
                   <div className="p-4 space-y-3">
-                    <div className="h-4 bg-black/20 rounded w-3/4" />
-                    <div className="h-3 bg-black/20 rounded w-full" />
-                    <div className="h-3 bg-black/20 rounded w-1/2" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-3 bg-gray-200 rounded w-full" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
                   </div>
                 </div>
               ))}
@@ -352,15 +311,15 @@ export default function CreatorPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayedContents.length > 0 ? (
                 displayedContents.map((content) => {
-                  const requiredBalance = content.minimumTokenAmount ? parseFloat(content.minimumTokenAmount) : 0;
-                  const isUnlocked = userBalance >= requiredBalance;
+                  const requiredBalance = contentService.getRequiredBalance(content);
+                  const isUnlocked = contentService.checkContentAccess(content, userBalance);
                   
                   return (
-                    <div key={content.id} className="group bg-black/10 rounded-2xl overflow-hidden border border-black/20 hover:border-black/30 transition-all duration-300 hover:scale-105">
+                    <div key={content.id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300">
                       {/* Content Preview */}
                       <div className="relative aspect-video overflow-hidden">
                         <Image
-                          src={`https://gateway.pinata.cloud/ipfs/${content.ipfsCid}`}
+                          src={contentService.buildContentImageUrl(content.ipfsCid)}
                           alt={content.filename}
                           fill
                           className="object-cover transition-transform duration-300 group-hover:scale-110"
@@ -394,7 +353,7 @@ export default function CreatorPage() {
                                 {requiredBalance} tokens required
                               </p>
                               <p className="text-white/70 text-xs">
-                                You have {userBalance.toFixed(2)}
+                                You have {balanceUtils.formatBalance(userBalance)}
                               </p>
                             </div>
                           </div>
@@ -402,7 +361,7 @@ export default function CreatorPage() {
 
                         {/* File Size in bottom corner */}
                         <div className="absolute bottom-3 left-3 text-white text-xs bg-black/50 px-2 py-1 rounded">
-                          {(parseInt(content.fileSize) / (1024 * 1024)).toFixed(2)} MB
+                          {contentService.formatFileSize(content.fileSize.toString())}
                         </div>
                       </div>
 
@@ -412,7 +371,7 @@ export default function CreatorPage() {
                           {content.filename.toUpperCase()}
                         </h3>
                         <p className="text-black/70 text-sm mb-3">
-                          {content.fileType.toUpperCase()} • {new Date(content.createdAt).toLocaleDateString()}
+                          {content.fileType.toUpperCase()} • {contentService.formatCreatedDate(content.createdAt)}
                         </p>
 
                         {/* Access Requirements */}
@@ -431,15 +390,15 @@ export default function CreatorPage() {
 
                         {/* Action Button */}
                         <button 
-                          className={`w-full py-2 px-4 rounded-full font-bold text-sm transition-all duration-200 ${
+                          className={`w-full py-2 px-4 rounded-full font-semibold text-sm transition-colors ${
                             isUnlocked 
-                              ? 'bg-black text-yellow-400 hover:scale-105' 
-                              : 'bg-black/20 text-black/50 cursor-not-allowed'
+                              ? 'bg-black text-white hover:bg-gray-800' 
+                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                           }`}
                           disabled={!isUnlocked}
                           onClick={() => {
                             if (isUnlocked) {
-                              window.open(`https://gateway.pinata.cloud/ipfs/${content.ipfsCid}`, '_blank');
+                              window.open(contentService.buildContentDownloadUrl(content.ipfsCid), '_blank');
                             }
                           }}
                         >
@@ -451,8 +410,8 @@ export default function CreatorPage() {
                 })
               ) : (
                 <div className="col-span-full text-center py-12">
-                  <p className="text-black/70 text-lg mb-2">No content available</p>
-                  <p className="text-black/50 text-sm">This creator hasn't uploaded any content yet</p>
+                  <p className="text-gray-600 text-lg mb-2">No content available</p>
+                  <p className="text-gray-500 text-sm">This creator hasn&apos;t uploaded any content yet</p>
                 </div>
               )}
             </div>
@@ -468,7 +427,7 @@ export default function CreatorPage() {
             <div className="text-center py-8">
               <button 
                 onClick={loadMore}
-                className="bg-black text-yellow-400 px-6 py-3 rounded-full font-bold hover:scale-105 transition-all duration-200"
+                className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors"
               >
                 Load More Content
               </button>
@@ -477,7 +436,7 @@ export default function CreatorPage() {
           
           {!hasMore && contents.length > 0 && (
             <div className="text-center py-8">
-              <p className="text-black/50">You've reached the end of the content</p>
+              <p className="text-gray-500">You&apos;ve reached the end of the content</p>
             </div>
           )}
         </section>

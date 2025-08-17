@@ -8,7 +8,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import LoginButton from '@/components/Auth/LoginButton';
 
 export default function Header() {
   const { user, logout, authenticated, ready, login } = usePrivy();
@@ -36,19 +35,21 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-black/10 border-b border-black/20 backdrop-blur-sm">
+    <header className={isCreatorPage ? "bg-white border-b border-gray-200 sticky top-0 z-10" : "bg-black/10 border-b border-black/20 backdrop-blur-sm"}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Upload className="w-6 h-6 text-black" />
-              <h1 className="text-2xl font-anton text-black tracking-wide">
-                BACKSTAGE ADMIN
+              <h1 className="text-2xl font-bold text-black tracking-tight">
+                {isCreatorPage ? "Backstage" : "BACKSTAGE ADMIN"}
               </h1>
             </div>
-            <div className="bg-black text-yellow-400 text-xs font-bold px-2 py-1 rounded-full animate-pulse">
-              BETA
-            </div>
+            {!isCreatorPage && (
+              <div className="bg-black text-yellow-400 text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                BETA
+              </div>
+            )}
           </div>
           
           <div className="flex items-center gap-3">
@@ -56,10 +57,9 @@ export default function Header() {
             {isCreatorPage && (
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 bg-black/10 px-4 py-2 rounded-full border border-black/20 text-black hover:bg-black hover:text-yellow-400 transition-all duration-200 hover:scale-105"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <Home className="w-4 h-4" />
-                <span className="hidden sm:inline font-bold">Dashboard</span>
+                <Home className="w-5 h-5" />
               </Link>
             )}
             
@@ -70,7 +70,10 @@ export default function Header() {
               /* Not authenticated - show connect wallet button */
               <button
                 onClick={login}
-                className="flex items-center gap-2 bg-black text-yellow-400 px-4 py-2 rounded-full font-bold hover:scale-105 transition-all duration-200"
+                className={isCreatorPage ? 
+                  "flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full font-semibold hover:bg-gray-800 transition-colors" :
+                  "flex items-center gap-2 bg-black text-yellow-400 px-4 py-2 rounded-full font-bold hover:scale-105 transition-all duration-200"
+                }
               >
                 <Wallet className="w-4 h-4" />
                 <span>Connect Wallet</span>
