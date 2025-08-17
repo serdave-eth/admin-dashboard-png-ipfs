@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useZoraCreators, ZoraCreatorData } from '@/lib/hooks/useZoraCreators';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
 import { ContentItem } from '@/types';
 import CreatorAvatar from '@/components/UI/CreatorAvatar';
-import { Lock, Download } from 'lucide-react';
+import Image from 'next/image';
+import { Lock, ArrowLeft } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
 import { createCreatorService } from '@/lib/services/creatorService';
 import { createContentService } from '@/lib/services/contentService';
@@ -16,6 +17,7 @@ import ContentModal from '@/components/Content/ContentModal';
 
 export default function CreatorPage() {
   const params = useParams();
+  const router = useRouter();
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [displayedContents, setDisplayedContents] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,9 +45,25 @@ export default function CreatorPage() {
   console.log('fetchZoraCoins function:', typeof fetchZoraCoins);
   
   // Initialize services
-  const creatorService = createCreatorService(getCreatorById);
-  const contentService = createContentService();
-  const balanceUtils = createBalanceUtils();
+  const creatorService = useMemo(() => createCreatorService(getCreatorById), []);
+  const contentService = useMemo(() => createContentService(), []);
+  const balanceUtils = useMemo(() => createBalanceUtils(), []);
+  
+  // Helper function to format relative time
+  const formatRelativeTime = (date: Date) => {
+    const now = new Date();
+    const diffInMs = now.getTime() - new Date(date).getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInHours / 24);
+    
+    if (diffInDays > 0) {
+      return `${diffInDays} day${diffInDays === 1 ? '' : 's'} ago`;
+    } else if (diffInHours > 0) {
+      return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
+    } else {
+      return 'Just now';
+    }
+  };
   
   // Get user's wallet address if available
   const userWalletAddress = balanceUtils.getUserWalletAddress(user);
@@ -156,7 +174,10 @@ export default function CreatorPage() {
       console.log('Updated creator with balance:', updatedCreator);
       console.log('User balance decimal:', updatedCreator.userBalanceDecimal);
       
-      setCreator(updatedCreator);
+      // Only update if the balance actually changed
+      if (updatedCreator.userBalanceDecimal !== creator.userBalanceDecimal) {
+        setCreator(updatedCreator);
+      }
     } else {
       console.log('=== BALANCE UPDATE CONDITIONS NOT MET ===');
       console.log('Creator exists:', !!creator);
@@ -262,8 +283,19 @@ export default function CreatorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <main className="relative z-10 container mx-auto px-6 py-12">
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-8">
+      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-8 relative">
+          {/* Back Arrow */}
+          <button 
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.history.back();
+              }
+            }}
+            className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="relative">
               <CreatorAvatar
@@ -275,7 +307,7 @@ export default function CreatorPage() {
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 pointer-events-none" />
               {(creator.uniqueHolders || 0) > 100 && (
                 <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-black text-sm font-bold px-3 py-1 rounded-full">
-                  🔥 TOP CREATOR
+                  TOP CREATOR
                 </div>
               )}
             </div>
@@ -283,16 +315,13 @@ export default function CreatorPage() {
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-5xl font-anton text-black mb-2 tracking-wide">{creator.name.toUpperCase()}</h1>
               <p className="text-xl text-black/70 mb-6">${creator.symbol}</p>
-              {creator.description && (
-                <p className="text-black/60 mb-6 max-w-2xl">{creator.description}</p>
-              )}
               
-              <div className="grid grid-cols-3 gap-6 mb-4">
-                <div>
-                  <p className="text-gray-500 text-sm flex items-center gap-1">
+              <div className="grid grid-cols-3 gap-3 mb-4 max-w-md">
+                <div className="text-center md:text-left">
+                  <p className="text-gray-500 text-sm flex items-center gap-1 justify-center md:justify-start">
                     Market Cap
                   </p>
-                  <p className="font-semibold text-lg">
+                  <p className="font-semibold text-lg text-center md:text-left">
                     {creator.marketCap ? (() => {
                       const mcap = parseFloat(creator.marketCap);
                       if (mcap >= 1000000) return `$${(mcap / 1000000).toFixed(1)}M`;
@@ -301,44 +330,29 @@ export default function CreatorPage() {
                     })() : '$0'}
                   </p>
                 </div>
-                <div>
-                  <p className="text-gray-500 text-sm flex items-center gap-1">
+                <div className="text-center md:text-left">
+                  <p className="text-gray-500 text-sm flex items-center gap-1 justify-center md:justify-start">
                     Holders
                   </p>
-                  <p className="font-semibold text-lg">{(creator.uniqueHolders || 0).toLocaleString()}</p>
+                  <p className="font-semibold text-lg text-center md:text-left">{(creator.uniqueHolders || 0).toLocaleString()}</p>
                 </div>
-                <div>
-                  <p className="text-gray-500 text-sm flex items-center gap-1">
-                    Price
+                <div className="text-center md:text-left">
+                  <p className="text-gray-500 text-sm flex items-center gap-1 justify-center md:justify-start">
+                    <span className="md:hidden">Balance</span>
+                    <span className="hidden md:inline">Your Balance</span>
                   </p>
-                  <p className="font-semibold text-lg">
-                    ${creator.price ? creator.price.toFixed(4) : '0.0000'}
+                  <p className="font-semibold text-lg text-center md:text-left">
+                    {zoraWallet?.smartWallet && userBalance > 0 
+                      ? Math.floor(userBalance).toLocaleString()
+                      : '0'
+                    }
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-center md:justify-start">
-                {!zoraWallet?.smartWallet ? (
-                  <button 
-                    onClick={login}
-                    className="bg-blue-100 border border-blue-600/30 rounded-full px-6 py-3 hover:bg-blue-200 transition-colors"
-                  >
-                    <p className="text-blue-700 font-bold">Login to check balance</p>
-                  </button>
-                ) : userBalance > 0 ? (
-                  <div className="bg-green-100 border border-green-600/30 rounded-full px-6 py-3">
-                    <p className="text-green-700 font-bold flex items-center gap-2">
-                      <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
-                      You own {balanceUtils.formatBalance(userBalance)} ${creator.symbol}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="bg-gray-100 rounded-full px-6 py-3 border border-gray-200">
-                    <p className="text-gray-600">You don&apos;t own any ${creator.symbol}</p>
-                  </div>
-                )}
-                <button className="bg-black text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors">
-                  Buy ${creator.symbol}
+                <button className="bg-black text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors cursor-pointer">
+                  Buy ${creator.symbol} (coming soon)
                 </button>
               </div>
               
@@ -350,29 +364,10 @@ export default function CreatorPage() {
         <section>
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-4xl font-anton text-black mb-2 tracking-wide">CREATOR CONTENT</h2>
-              <p className="text-black/70">
-                {isLoadingContent ? 'Loading content...' : 
-                 contents.length === 0 ? 'No content available' : 
-                 `${contents.length} content ${contents.length === 1 ? 'item' : 'items'}`}
-              </p>
+              <h2 className="text-4xl font-anton text-black mb-2 tracking-wide">CONTENT</h2>
             </div>
           </div>
           
-          {contents.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8">
-              <div className="flex items-start gap-4">
-                <span className="text-3xl">📁</span>
-                <div>
-                  <h3 className="text-blue-700 font-bold text-lg mb-1">Content Access</h3>
-                  <p className="text-gray-600">
-                    Content access is determined by your ${creator.symbol} token balance and the minimum requirements set by the creator.
-                    You currently have {balanceUtils.formatBalance(userBalance)} tokens.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {isLoadingContent ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -410,18 +405,13 @@ export default function CreatorPage() {
                             target.style.display = 'none';
                           }}
                         />
-                        
                         {/* Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                         
-                        {/* Content Type Icon */}
-                        <div className="absolute top-3 left-3 bg-green-500 rounded-full p-2">
-                          <Download className="w-4 h-4 text-white" />
-                        </div>
 
                         {/* Premium Badge */}
                         {requiredBalance > 0 && (
-                          <div className="absolute top-3 right-3 bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-bold">
+                          <div className="absolute top-3 right-3 bg-black text-white px-2 py-1 rounded-full text-xs font-bold">
                             PREMIUM
                           </div>
                         )}
@@ -430,54 +420,34 @@ export default function CreatorPage() {
                         {!isUnlocked && (
                           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
                             <div className="text-center bg-black/80 rounded-xl p-4">
-                              <Lock className="w-10 h-10 text-yellow-400 mb-2 mx-auto" />
+                              <Lock className="w-10 h-10 text-gray-400 mb-2 mx-auto" />
                               <p className="text-white text-sm font-bold">
-                                {requiredBalance} tokens required
+                                {requiredBalance} coins required
                               </p>
-                              <p className="text-white/70 text-xs mt-1">
-                                You have {balanceUtils.formatBalance(userBalance)}
-                              </p>
+                              {!user && (
+                                <p className="text-white/80 text-xs mt-1">
+                                  Log in to check balance
+                                </p>
+                              )}
                             </div>
                           </div>
                         )}
 
-                        {/* File Size in bottom corner */}
-                        <div className="absolute bottom-3 left-3 text-white text-xs bg-black/50 px-2 py-1 rounded">
-                          {contentService.formatFileSize(content.fileSize.toString())}
-                        </div>
                       </div>
 
                       {/* Content Info */}
                       <div className="p-4">
                         <h3 className="font-anton text-lg text-black mb-2 tracking-wide truncate">
-                          {content.filename.toUpperCase()}
+                          {content.filename.replace(/\.[^/.]+$/, "").toUpperCase()}
                         </h3>
                         <p className="text-black/70 text-sm mb-3">
-                          {content.fileType.toUpperCase()} • {contentService.formatCreatedDate(content.createdAt)}
+                          {content.fileType.toLowerCase().startsWith('image/') ? 'IMAGE' : content.fileType.toUpperCase()} • {formatRelativeTime(new Date(content.createdAt))}
                         </p>
 
-                        {/* Access Requirements */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            {isUnlocked ? (
-                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                            ) : (
-                              <Lock className="w-3 h-3 text-black/50" />
-                            )}
-                            <span className="text-xs text-black/70">
-                              {isUnlocked ? 'Unlocked' : `${requiredBalance} tokens needed`}
-                            </span>
-                          </div>
-                        </div>
 
                         {/* Action Button */}
                         <button 
-                          className={`w-full py-2 px-4 rounded-full font-semibold text-sm transition-colors ${
-                            isUnlocked 
-                              ? 'bg-black text-white hover:bg-gray-800' 
-                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                          }`}
-                          disabled={!isUnlocked}
+                          className="w-full py-2 px-4 rounded-full font-semibold text-sm transition-colors cursor-pointer bg-black text-white hover:bg-gray-800"
                           onClick={() => {
                             if (isUnlocked) {
                               setSelectedContent(content);
@@ -485,7 +455,7 @@ export default function CreatorPage() {
                             }
                           }}
                         >
-                          {isUnlocked ? 'View Content' : 'Locked'}
+                          {isUnlocked ? 'View Content' : `Buy ${requiredBalance} $${creator.symbol}`}
                         </button>
                       </div>
                     </div>
@@ -510,18 +480,13 @@ export default function CreatorPage() {
             <div className="text-center py-8">
               <button 
                 onClick={loadMore}
-                className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors"
+                className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors cursor-pointer"
               >
                 Load More Content
               </button>
             </div>
           )}
           
-          {!hasMore && contents.length > 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">You&apos;ve reached the end of the content</p>
-            </div>
-          )}
         </section>
       </main>
 

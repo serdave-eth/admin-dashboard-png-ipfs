@@ -10,22 +10,16 @@ function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  useEffect(() => {
-    // Only redirect if user is authenticated AND they didn't explicitly navigate here via the logo
-    const fromLogo = searchParams.get('from') === 'logo';
-    if (authenticated && !fromLogo) {
-      router.push('/dashboard');
-    }
-  }, [authenticated, router, searchParams]);
+  // Removed automatic redirect - let authenticated users stay on landing page
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <main>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+    <div className="h-[calc(100vh-64px)] bg-white flex flex-col">
+      {/* Hero Section - Header is 64px (h-16) */}
+      <main className="flex-1 flex items-center justify-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-black mb-6 tracking-tight">
-              The Patreon for
+              Patreon for
               <br />
               <span className="text-blue-600">Creator Coins</span>
             </h1>
@@ -38,19 +32,17 @@ function HomeContent() {
               <TopCreators />
             </div>
             
-            <div className="flex justify-center items-center mb-16">
+            <div className="flex justify-center items-center">
               <button 
                 onClick={() => router.push('/explore')}
-                className="bg-black text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors"
+                className="bg-black text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors cursor-pointer"
               >
                 Explore Creators
               </button>
             </div>
           </div>
-
         </div>
       </main>
-
     </div>
   );
 }
