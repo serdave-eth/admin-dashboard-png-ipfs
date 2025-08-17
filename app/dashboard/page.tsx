@@ -262,18 +262,9 @@ export default function Dashboard() {
               )}
             </div>
             {hasZoraLinked && zoraWallet?.smartWallet ? (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-shrink-0">
-                <span className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-bold">
-                  Connected
-                </span>
-                <button
-                  onClick={clearZoraLink}
-                  disabled={isClearing}
-                  className="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {isClearing ? 'Disconnecting...' : 'Disconnect'}
-                </button>
-              </div>
+              <span className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-bold flex-shrink-0 self-start sm:self-auto">
+                Connected
+              </span>
             ) : (
               <button
                 onClick={linkZora}
