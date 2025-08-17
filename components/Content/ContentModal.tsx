@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { ContentItem } from '@/types';
 
@@ -19,6 +19,19 @@ export default function ContentModal({
   content,
   contentService
 }: ContentModalProps) {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen || !content) return null;
 
   return (
@@ -30,9 +43,9 @@ export default function ContentModal({
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl max-w-[95vw] max-h-[95vh] overflow-hidden shadow-2xl">
+      <div className="relative bg-white rounded-2xl max-w-[90vw] max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white flex-shrink-0">
           <h2 className="text-xl font-semibold text-black truncate pr-4">
             {content.filename}
           </h2>
@@ -45,20 +58,18 @@ export default function ContentModal({
         </div>
 
         {/* Image Content */}
-        <div className="overflow-auto max-h-[calc(95vh-80px)]">
-          <div className="relative w-full">
-            <img
-              src={contentService.buildContentImageUrl(content.ipfsCid)}
-              alt={content.filename}
-              className="w-full h-auto object-contain"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.onerror = null; // Prevent infinite loop
-                // Don't try to load placeholder, just hide the broken image
-                target.style.display = 'none';
-              }}
-            />
-          </div>
+        <div className="overflow-y-auto overflow-x-hidden">
+          <img
+            src={contentService.buildContentImageUrl(content.ipfsCid)}
+            alt={content.filename}
+            className="max-w-[90vw] max-h-[calc(90vh-80px)] w-auto h-auto object-contain"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.onerror = null; // Prevent infinite loop
+              // Don't try to load placeholder, just hide the broken image
+              target.style.display = 'none';
+            }}
+          />
         </div>
       </div>
     </div>
