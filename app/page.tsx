@@ -4,6 +4,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import LoginButton from '@/components/Auth/LoginButton';
+import TopCreators from '@/components/TopCreators';
 
 export default function Home() {
   const { authenticated } = usePrivy();
@@ -48,6 +49,11 @@ export default function Home() {
             <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-12">
               Support creators through coin ownership and unlock exclusive content.
             </p>
+            
+            {/* Creator Profile Icons */}
+            <div className="flex justify-center items-center mb-12">
+              <TopCreators />
+            </div>
             
             <div className="flex justify-center items-center mb-16">
               <button 
