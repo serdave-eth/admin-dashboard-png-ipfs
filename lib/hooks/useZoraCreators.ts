@@ -95,7 +95,7 @@ export const useZoraCreators = (): UseZoraCreatorsReturn => {
         description: coin?.description || 'Creator on Zora',
         profileImage: coin?.mediaContent?.previewImage?.medium || 
                      coin?.mediaContent?.previewImage?.small || 
-                     `/api/placeholder/150/150`,
+                     undefined,
         totalSupply: coin?.totalSupply || '0',
         marketCap: coin?.marketCap || '0',
         uniqueHolders: coin?.uniqueHolders || 0,
@@ -171,7 +171,7 @@ export const useZoraCreators = (): UseZoraCreatorsReturn => {
           description: coin.description || 'Creator on Zora',
           profileImage: coin.mediaContent?.previewImage?.medium || 
                        coin.mediaContent?.previewImage?.small || 
-                       `/api/placeholder/150/150`,
+                       undefined,
           totalSupply: coin.totalSupply || '0',
           marketCap: coin.marketCap || '0',
           uniqueHolders: coin.uniqueHolders || 0,
