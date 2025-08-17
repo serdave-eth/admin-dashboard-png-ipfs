@@ -7,7 +7,6 @@ import { useZoraCreators, ZoraCreatorData } from '@/lib/hooks/useZoraCreators';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
 import { ContentItem } from '@/types';
 import CreatorAvatar from '@/components/UI/CreatorAvatar';
-import Image from 'next/image';
 import { Lock, Download } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
 import { createCreatorService } from '@/lib/services/creatorService';
@@ -398,15 +397,17 @@ export default function CreatorPage() {
                   return (
                     <div key={content.id} className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300">
                       {/* Content Preview */}
-                      <div className="relative aspect-video overflow-hidden">
-                        <Image
+                      <div className="relative aspect-video overflow-hidden bg-gray-100">
+                        <img
                           src={contentService.buildContentImageUrl(content.ipfsCid)}
                           alt={content.filename}
-                          fill
-                          className="object-cover transition-transform duration-300 group-hover:scale-110"
+                          className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${
+                            !isUnlocked ? 'blur-xl' : ''
+                          }`}
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.src = '/api/placeholder/300/200';
+                            target.onerror = null; // Prevent infinite loop
+                            target.style.display = 'none';
                           }}
                         />
                         
@@ -427,13 +428,13 @@ export default function CreatorPage() {
 
                         {/* Lock Overlay for locked content */}
                         {!isUnlocked && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <div className="text-center">
-                              <Lock className="w-8 h-8 text-white mb-2 mx-auto" />
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                            <div className="text-center bg-black/80 rounded-xl p-4">
+                              <Lock className="w-10 h-10 text-yellow-400 mb-2 mx-auto" />
                               <p className="text-white text-sm font-bold">
                                 {requiredBalance} tokens required
                               </p>
-                              <p className="text-white/70 text-xs">
+                              <p className="text-white/70 text-xs mt-1">
                                 You have {balanceUtils.formatBalance(userBalance)}
                               </p>
                             </div>
