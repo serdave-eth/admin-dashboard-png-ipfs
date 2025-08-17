@@ -69,6 +69,31 @@ export default function ContentFeed({ refreshTrigger }: { refreshTrigger: number
     }
   };
 
+  const handleDelete = async (contentId: string) => {
+    try {
+      const accessToken = await getAccessToken();
+      const response = await fetch(`/api/content/${contentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete content');
+      }
+
+      // Remove the deleted item from the local state
+      setItems(prev => prev.filter(item => item.id !== contentId));
+      
+      return true;
+    } catch (error) {
+      console.error('Delete error:', error);
+      throw error;
+    }
+  };
+
   if (loading && items.length === 0) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -94,7 +119,7 @@ export default function ContentFeed({ refreshTrigger }: { refreshTrigger: number
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((item) => (
-          <ContentCard key={item.id} item={item} />
+          <ContentCard key={item.id} item={item} onDelete={handleDelete} />
         ))}
       </div>
     </InfiniteScroll>
