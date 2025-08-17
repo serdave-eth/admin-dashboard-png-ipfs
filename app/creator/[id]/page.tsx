@@ -13,6 +13,7 @@ import { createCreatorService } from '@/lib/services/creatorService';
 import { createContentService } from '@/lib/services/contentService';
 import { createBalanceUtils } from '@/lib/utils/balanceUtils';
 import ContentModal from '@/components/Content/ContentModal';
+import PurchaseModal from '@/components/PurchaseModal';
 
 export default function CreatorPage() {
   const params = useParams();
@@ -29,6 +30,9 @@ export default function CreatorPage() {
   // Content modal state
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Purchase modal state
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   
   const coinAddress = params.id as string;
   const { getCreatorById } = useZoraCreators();
@@ -337,7 +341,10 @@ export default function CreatorPage() {
                     <p className="text-gray-600">You don&apos;t own any ${creator.symbol}</p>
                   </div>
                 )}
-                <button className="bg-black text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors">
+                <button 
+                  onClick={() => setIsPurchaseModalOpen(true)}
+                  className="bg-black text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-gray-800 transition-colors"
+                >
                   Buy ${creator.symbol}
                 </button>
               </div>
@@ -534,6 +541,19 @@ export default function CreatorPage() {
         content={selectedContent}
         contentService={contentService}
       />
+      
+      {creator && (
+        <PurchaseModal
+          isOpen={isPurchaseModalOpen}
+          onClose={() => setIsPurchaseModalOpen(false)}
+          creator={{
+            name: creator.name,
+            symbol: creator.symbol || '',
+            marketCap: creator.marketCap || '0',
+            address: coinAddress
+          }}
+        />
+      )}
     </div>
   );
 }
