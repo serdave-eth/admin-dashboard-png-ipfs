@@ -1,17 +1,18 @@
 import axios, { AxiosError } from 'axios';
 
 const PINATA_API_URL = 'https://api.pinata.cloud';
-const PINATA_GATEWAY = 'https://emerald-lazy-penguin-883.mypinata.cloud';
 
 class PinataClient {
   private apiKey: string;
   private secretKey: string;
   private jwt: string;
+  private gatewayUrl: string;
 
   constructor() {
     this.apiKey = process.env.PINATA_API_KEY || '';
     this.secretKey = process.env.PINATA_SECRET_API_KEY || '';
     this.jwt = process.env.PINATA_JWT || '';
+    this.gatewayUrl = process.env.PINATA_GATEWAY_URL || 'https://gateway.pinata.cloud';
   }
 
   async uploadFile(file: File): Promise<{ cid: string; size: number }> {
@@ -56,13 +57,13 @@ class PinataClient {
   }
 
   getGatewayUrl(cid: string): string {
-    return `${PINATA_GATEWAY}/ipfs/${cid}`;
+    return `${this.gatewayUrl}/ipfs/${cid}`;
   }
 
   async fetchFile(cid: string): Promise<ArrayBuffer> {
     try {
       const response = await axios.get(
-        `${PINATA_GATEWAY}/ipfs/${cid}`,
+        `${this.gatewayUrl}/ipfs/${cid}`,
         {
           headers: {
             'Authorization': `Bearer ${this.jwt}`,
