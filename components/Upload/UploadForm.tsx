@@ -182,8 +182,8 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
                     disabled={uploading}
                   >
                     <option value="">Choose a coin...</option>
-                    {zoraCoins.map((coin) => (
-                      <option key={coin.id} value={coin.coin?.address || ''}>
+                    {zoraCoins.map((coin, index) => (
+                      <option key={`${coin.id || coin.coin?.address || 'coin'}-${index}`} value={coin.coin?.address || ''}>
                         {coin.coin?.name || 'Unknown'} ({coin.coin?.symbol || 'N/A'}) - Balance: {coin.balanceDecimal ? coin.balanceDecimal.toLocaleString(undefined, { maximumFractionDigits: 6 }) : coin.balance}
                       </option>
                     ))}

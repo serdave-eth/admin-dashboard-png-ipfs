@@ -3,19 +3,19 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { truncateAddress } from '@/lib/utils';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
-import { LogOut, Upload, Wallet, Copy, Check, Home } from 'lucide-react';
+import { LogOut, Wallet, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function Header() {
   const { user, logout, authenticated, ready, login } = usePrivy();
   const { zoraWallet, hasZoraLinked } = useZoraLinking();
   const [copiedWallet, setCopiedWallet] = useState<'primary' | 'zora' | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
   
-  // Check if we're on a creator page
+  // Check if we're on a creator page (for styling adjustments)
   const isCreatorPage = pathname?.startsWith('/creator/');
   
   // Handle both external and embedded wallets
@@ -35,33 +35,41 @@ export default function Header() {
   };
 
   return (
-    <header className={isCreatorPage ? "bg-white border-b border-gray-200 sticky top-0 z-10" : "bg-black/10 border-b border-black/20 backdrop-blur-sm"}>
+    <header className={isCreatorPage ? "bg-white border-b border-gray-200 sticky top-0 z-10" : "bg-white border-b border-gray-200 sticky top-0 z-10"}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Upload className="w-6 h-6 text-black" />
-              <h1 className="text-2xl font-bold text-black tracking-tight">
-                {isCreatorPage ? "Backstage" : "BACKSTAGE ADMIN"}
-              </h1>
-            </div>
-            {!isCreatorPage && (
-              <div className="bg-black text-yellow-400 text-xs font-bold px-2 py-1 rounded-full animate-pulse">
-                BETA
-              </div>
+          <div className="flex items-center gap-4">
+            <h1 
+              onClick={() => router.push('/?from=logo')}
+              className="text-2xl font-bold text-black tracking-tight cursor-pointer hover:text-gray-700 transition-colors"
+            >
+              Backstage
+            </h1>
+          </div>
+          
+          {/* Navigation Menu */}
+          <div className="flex items-center space-x-8">
+            <button
+              onClick={() => router.push('/explore')}
+              className={`font-medium transition-colors ${
+                pathname === '/explore' ? 'text-blue-600' : 'text-black hover:text-gray-600'
+              }`}
+            >
+              Explore
+            </button>
+            {authenticated && (
+              <button
+                onClick={() => router.push('/dashboard')}
+                className={`font-medium transition-colors ${
+                  pathname === '/dashboard' ? 'text-blue-600' : 'text-black hover:text-gray-600'
+                }`}
+              >
+                Dashboard
+              </button>
             )}
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Dashboard button - only show on creator pages */}
-            {isCreatorPage && (
-              <Link
-                href="/dashboard"
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <Home className="w-5 h-5" />
-              </Link>
-            )}
             
             {!ready ? (
               /* Loading state */
@@ -70,10 +78,7 @@ export default function Header() {
               /* Not authenticated - show connect wallet button */
               <button
                 onClick={login}
-                className={isCreatorPage ? 
-                  "flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full font-semibold hover:bg-gray-800 transition-colors" :
-                  "flex items-center gap-2 bg-black text-yellow-400 px-4 py-2 rounded-full font-bold hover:scale-105 transition-all duration-200"
-                }
+                className="flex items-center gap-2 bg-black text-white px-6 py-2 rounded-full font-semibold hover:bg-gray-800 transition-colors"
               >
                 <Wallet className="w-4 h-4" />
                 <span>Connect Wallet</span>

@@ -7,7 +7,6 @@ import { useZoraCreators, ZoraCreatorData } from '@/lib/hooks/useZoraCreators';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
 import { ContentItem } from '@/types';
 import CreatorAvatar from '@/components/UI/CreatorAvatar';
-import Header from '@/components/UI/Header';
 import Image from 'next/image';
 import { Lock, Download } from 'lucide-react';
 import { usePrivy } from '@privy-io/react-auth';
@@ -264,9 +263,6 @@ export default function CreatorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
-      <Header />
-
       <main className="relative z-10 container mx-auto px-6 py-12">
         <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">

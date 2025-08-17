@@ -3,6 +3,7 @@ import { Anton } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
 import './globals.css';
 import Providers from '@/components/Providers';
+import Header from '@/components/UI/Header';
 
 const anton = Anton({ 
   weight: "400",
@@ -28,7 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistMono.variable} ${anton.variable} font-mono antialiased`} style={{backgroundColor: '#F6CA46'}}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <Header />
+          {children}
+        </Providers>
       </body>
     </html>
   );
