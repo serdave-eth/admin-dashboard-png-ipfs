@@ -53,12 +53,12 @@ interface CoinBalance {
   isOwner?: boolean;
 }
 
-// Contract ABI for the owners function and decimals
+// Contract ABI for the balanceOf function and decimals
 const CONTRACT_ABI = [
   {
-    "inputs": [],
-    "name": "owners",
-    "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}],
+    "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
     "type": "function"
   },
@@ -89,6 +89,10 @@ export interface UseZoraLinkingReturn {
 export const useZoraLinking = (): UseZoraLinkingReturn => {
   const { user, authenticated, getAccessToken } = usePrivy();
   const { linkCrossAppAccount } = useCrossAppAccounts();
+  
+  console.log('=== USE ZORA LINKING HOOK CALLED ===');
+  console.log('user:', user);
+  console.log('authenticated:', authenticated);
   
   const [isLinking, setIsLinking] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -130,6 +134,9 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     const fetchStoredZoraWallet = async () => {
       if (!authenticated) return;
       
+      console.log('=== FETCHING STORED ZORA WALLET ===');
+      console.log('authenticated:', authenticated);
+      
       try {
         const response = await fetch('/api/user/zora-wallet', {
           headers: {
@@ -137,11 +144,17 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
           }
         });
         
+        console.log('Stored Zora wallet response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('Stored Zora wallet response data:', data);
           if (data.success && data.data) {
+            console.log('Setting stored Zora wallet to:', data.data.zoraWallet);
             setStoredZoraWallet(data.data.zoraWallet);
           }
+        } else {
+          console.log('Stored Zora wallet response not ok:', response.statusText);
         }
       } catch (error) {
         console.error('Failed to fetch stored Zora wallet:', error);
@@ -154,12 +167,22 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
   const zoraWalletAddress = getZoraWalletAddress();
   
   const zoraWallet: ZoraWallet | null = useMemo(() => {
-    return zoraAccount ? {
+    console.log('=== CREATING ZORA WALLET OBJECT ===');
+    console.log('zoraAccount:', zoraAccount);
+    console.log('storedZoraWallet:', storedZoraWallet);
+    console.log('zoraWalletAddress:', zoraWalletAddress);
+    console.log('zoraAccount.smartWallets:', zoraAccount?.smartWallets);
+    
+    const result = zoraAccount ? {
       // Prefer the stored wallet address from database, fall back to detected address
       address: storedZoraWallet || zoraWalletAddress || 'Zora Account Linked (Address Not Available)',
       appId: process.env.NEXT_PUBLIC_ZORA_APP_ID || 'clpgf04wn04hnkw0fv1m11mnb',
-      smartWallet: zoraAccount.smartWallets?.[0]?.address || undefined
+      // Use the stored Zora wallet address as the smartWallet for fetching coins
+      smartWallet: storedZoraWallet || zoraAccount.smartWallets?.[0]?.address || undefined
     } : null;
+    
+    console.log('Created zoraWallet object:', result);
+    return result;
   }, [zoraAccount, storedZoraWallet, zoraWalletAddress]);
 
   const hasZoraLinked = Boolean(zoraWallet) || Boolean(zoraAccount);
@@ -286,9 +309,9 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     setError(null);
   }, []);
 
-  // Check if Zora smart wallet is a creator/owner of a specific coin contract and get decimals
-  const checkCoinOwnership = useCallback(async (coinAddress: string, zoraSmartWallet: string): Promise<{isOwner: boolean, decimals: number}> => {
-    console.log(`[Ownership Check] Starting check for coin ${coinAddress} with wallet ${zoraSmartWallet}`);
+  // Check if Zora smart wallet has a balance > 0 for a specific coin contract and get decimals
+  const checkCoinBalance = useCallback(async (coinAddress: string, zoraSmartWallet: string): Promise<{hasBalance: boolean, decimals: number, balance: string}> => {
+    console.log(`[Balance Check] Starting balance check for coin ${coinAddress} with wallet ${zoraSmartWallet}`);
     try {
       // Connect to Base network using LlamaRPC
       const provider = new ethers.JsonRpcProvider('https://base.llamarpc.com');
@@ -296,34 +319,42 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
       // Create contract instance
       const contract = new ethers.Contract(coinAddress, CONTRACT_ABI, provider);
       
-      // Call the owners function and decimals function
-      console.log(`[Ownership Check] Calling contract.owners() and contract.decimals()...`);
-      const [owners, decimals] = await Promise.all([
-        contract.owners(),
+      // Call the balanceOf function and decimals function
+      console.log(`[Balance Check] Calling contract.balanceOf(${zoraSmartWallet}) and contract.decimals()...`);
+      const [balance, decimals] = await Promise.all([
+        contract.balanceOf(zoraSmartWallet),
         contract.decimals()
       ]);
       
-      console.log(`[Ownership Check] Owners array for ${coinAddress}:`, owners);
-      console.log(`[Ownership Check] Checking if ${zoraSmartWallet} is in owners array...`);
+      console.log(`[Balance Check] Raw balance for ${coinAddress}:`, balance.toString());
+      console.log(`[Balance Check] Decimals for ${coinAddress}:`, decimals);
       
-      // Check if Zora smart wallet is in the owners array
-      const isOwner = owners.includes(zoraSmartWallet);
+      // Check if user has any balance
+      const hasBalance = BigInt(balance) > BigInt(0);
       
-      console.log(`[Ownership Check] Result: Coin ${coinAddress}: Zora wallet ${zoraSmartWallet} is owner: ${isOwner}, decimals: ${decimals}`);
-      return { isOwner, decimals: Number(decimals) };
+      console.log(`[Balance Check] Result: Coin ${coinAddress}: Zora wallet ${zoraSmartWallet} has balance: ${hasBalance}, raw balance: ${balance.toString()}, decimals: ${decimals}`);
+      return { 
+        hasBalance, 
+        decimals: Number(decimals), 
+        balance: balance.toString() 
+      };
     } catch (error) {
-      console.error(`[Ownership Check] ERROR - Failed to check ownership for coin ${coinAddress}:`, error);
-      console.error(`[Ownership Check] This coin will be excluded due to error. Returning isOwner: false`);
-      return { isOwner: false, decimals: 18 }; // Default to 18 decimals on error
+      console.error(`[Balance Check] ERROR - Failed to check balance for coin ${coinAddress}:`, error);
+      console.error(`[Balance Check] This coin will be excluded due to error. Returning hasBalance: false`);
+      return { hasBalance: false, decimals: 18, balance: '0' }; // Default to 18 decimals on error
     }
   }, []);
 
   const fetchZoraCoins = useCallback(async () => {
     console.log(`[Zora Coins Debug] ====== STARTING FETCH ZORA COINS ======`);
     console.log(`[Zora Coins Debug] Zora Wallet:`, zoraWallet);
+    console.log(`[Zora Coins Debug] Zora Wallet Smart Wallet:`, zoraWallet?.smartWallet);
+    console.log(`[Zora Coins Debug] Stored Zora Wallet:`, storedZoraWallet);
     
     if (!zoraWallet?.smartWallet) {
       console.error(`[Zora Coins Debug] ERROR: No Zora smart wallet available`);
+      console.error(`[Zora Coins Debug] zoraWallet:`, zoraWallet);
+      console.error(`[Zora Coins Debug] storedZoraWallet:`, storedZoraWallet);
       setCoinsError('No Zora smart wallet available');
       return;
     }
@@ -394,34 +425,33 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
         });
         
         if (balance.coin?.address) {
-          console.log(`[Zora Coins Debug] Checking creator status for: ${balance.coin.name || 'Unknown'} (${balance.coin.address})`);
-          const { isOwner: isCreator, decimals } = await checkCoinOwnership(balance.coin.address, zoraWallet.smartWallet);
+          console.log(`[Zora Coins Debug] Checking balance for: ${balance.coin.name || 'Unknown'} (${balance.coin.address})`);
+          const { hasBalance, decimals, balance: rawBalance } = await checkCoinBalance(balance.coin.address, zoraWallet.smartWallet);
           
           // Convert raw balance to decimal balance
-          const rawBalance = BigInt(balance.balance);
-          const divisor = BigInt(10 ** decimals);
-          const balanceDecimal = Number(rawBalance) / Number(divisor);
+          const balanceDecimal = Number(rawBalance) / Number(10 ** decimals);
           
-          if (isCreator) {
-            console.log(`[Zora Coins Debug] ✅ CREATOR CONFIRMED for ${balance.coin.name}:`, {
-              rawBalance: balance.balance,
+          if (hasBalance) {
+            console.log(`[Zora Coins Debug] ✅ TOKEN HOLDER CONFIRMED for ${balance.coin.name}:`, {
+              rawBalance: rawBalance,
               decimals: decimals,
               convertedBalance: balanceDecimal
+            });
+            
+            processedBalances.push({
+              ...balance,
+              isOwner: false, // This indicates if user is the creator
+              decimals,
+              balanceDecimal
             });
           } else {
-            console.log(`[Zora Coins Debug] 📈 TOKEN HOLDER for ${balance.coin.name}:`, {
-              rawBalance: balance.balance,
+            console.log(`[Zora Coins Debug] ❌ NO BALANCE for ${balance.coin.name}:`, {
+              rawBalance: rawBalance,
               decimals: decimals,
               convertedBalance: balanceDecimal
             });
+            // Don't add coins with 0 balance
           }
-          
-          processedBalances.push({
-            ...balance,
-            isOwner: isCreator, // This indicates if user is the creator
-            decimals,
-            balanceDecimal
-          });
         } else {
           console.log(`[Zora Coins Debug] ⚠️ SKIPPED - No contract address for coin ${i + 1}/${allBalances.length}`);
         }
@@ -446,7 +476,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     } finally {
       setIsLoadingCoins(false);
     }
-  }, [zoraWallet, checkCoinOwnership]);
+  }, [zoraWallet, checkCoinBalance]);
 
   return {
     linkZora,
