@@ -3,11 +3,19 @@
 import { useState } from 'react';
 import { ContentItem } from '@/types';
 import { formatFileSize, getFileIcon, formatDate } from '@/lib/utils';
-import { Copy, ExternalLink, Check } from 'lucide-react';
+import { Copy, ExternalLink, Check, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function ContentCard({ item }: { item: ContentItem }) {
+export default function ContentCard({ 
+  item, 
+  onDelete 
+}: { 
+  item: ContentItem;
+  onDelete?: (id: string) => void;
+}) {
   const [copied, setCopied] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const ipfsGatewayUrl = `https://gateway.pinata.cloud/ipfs/${item.ipfsCid}`;
 
   const copyToClipboard = async () => {
@@ -21,13 +29,40 @@ export default function ContentCard({ item }: { item: ContentItem }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await onDelete(item.id);
+      toast.success('Content deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete content');
+      console.error('Delete error:', error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="text-2xl">{getFileIcon(item.fileType)}</div>
-        <span className="text-xs text-gray-500">
-          {formatDate(item.createdAt)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">
+            {formatDate(item.createdAt)}
+          </span>
+          {onDelete && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-red-500 hover:text-red-700 transition-colors p-1 hover:bg-red-50 rounded"
+              title="Delete content"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       <h3 className="font-medium text-gray-900 truncate mb-2" title={item.filename}>
@@ -103,6 +138,34 @@ export default function ContentCard({ item }: { item: ContentItem }) {
           View on IPFS
         </a>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Content</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete &quot;{item.filename}&quot;? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

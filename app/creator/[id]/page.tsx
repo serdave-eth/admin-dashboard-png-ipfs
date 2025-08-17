@@ -347,22 +347,7 @@ export default function CreatorPage() {
                 </button>
               </div>
               
-              {/* Debug info - remove this after debugging */}
-              {zoraWallet?.smartWallet && (
-                <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs text-gray-600">
-                  <p><strong>Debug Info:</strong></p>
-                  <p>Smart Wallet: {zoraWallet.smartWallet}</p>
-                  <p>User Balance: {userBalance}</p>
-                  <p>Creator Symbol: {creator.symbol}</p>
-                  <p>Zora Coins Count: {zoraCoins.length}</p>
-                  <p>Coin Address: {coinAddress}</p>
-                  <p>Balance &gt; 0: {userBalance > 0 ? 'true' : 'false'}</p>
-                  <p>Balance Type: {typeof userBalance}</p>
-                  <p>Balance Precision: {userBalance.toFixed(10)}</p>
-                  <p>Zora Coins Addresses: {zoraCoins.map(c => c.coin?.address).join(', ')}</p>
-                  <p>Matching Coin: {zoraCoins.find(c => c.coin?.address?.toLowerCase() === coinAddress.toLowerCase())?.coin?.name || 'None'}</p>
-                </div>
-              )}
+
             </div>
           </div>
         </div>
