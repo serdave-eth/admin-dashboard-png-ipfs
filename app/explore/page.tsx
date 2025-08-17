@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Unlock, Users, TrendingUp, Coins } from 'lucide-react';
-import { getCoinsMostValuable, getCoinsTopGainers } from '@zoralabs/coins-sdk';
+import Image from 'next/image';
 
 interface Creator {
   id: string;
@@ -23,7 +23,6 @@ export default function ExplorePage() {
   const router = useRouter();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'valuable' | 'gainers' | 'active'>('valuable');
 
   // Mock content data for creators - 3 creators only
   const mockCreators: Creator[] = [
@@ -69,7 +68,7 @@ export default function ExplorePage() {
     // For now, use mock data
     setCreators(mockCreators);
     setLoading(false);
-  }, [activeTab]);
+  }, [mockCreators]);
 
   const CreatorCard = ({ creator }: { creator: Creator }) => (
     <div 
@@ -77,10 +76,11 @@ export default function ExplorePage() {
       className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
     >
       <div className="relative h-48 bg-gradient-to-br from-blue-50 to-purple-50">
-        <img
-          src={creator.imageUrl}
+        <Image
+          src={creator.imageUrl || ''}
           alt={creator.name}
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          className="object-cover"
         />
         <div className="absolute top-4 right-4 p-2 rounded-full">
           {creator.isLocked ? (

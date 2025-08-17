@@ -2,10 +2,10 @@
 
 import { usePrivy } from '@privy-io/react-auth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import TopCreators from '@/components/TopCreators';
 
-export default function Home() {
+function HomeContent() {
   const { authenticated } = usePrivy();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -52,5 +52,20 @@ export default function Home() {
       </main>
 
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-black mb-4"></div>
+          <p className="text-black">Loading...</p>
+        </div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

@@ -3,11 +3,10 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { truncateAddress } from '@/lib/utils';
 import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
-import { LogOut, Upload, Wallet, Copy, Check } from 'lucide-react';
+import { LogOut, Wallet, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { usePathname, useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function Header() {
   const { user, logout, authenticated, ready, login } = usePrivy();
