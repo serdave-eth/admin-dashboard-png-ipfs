@@ -7,7 +7,7 @@ export const privyConfig = {
       createOnLogin: 'users-without-wallets' as const,
       noPromptOnSignature: false,
     },
-    loginMethods: ['wallet', 'email'],
+    loginMethods: ['wallet', 'email', 'farcaster'],
     appearance: {
       theme: 'light' as const,
       accentColor: '#6366F1' as `#${string}`,
