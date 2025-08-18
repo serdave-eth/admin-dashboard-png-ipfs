@@ -422,11 +422,16 @@ export default function CreatorPage() {
                             <div className="text-center bg-black/80 rounded-xl p-4">
                               <Lock className="w-10 h-10 text-gray-400 mb-2 mx-auto" />
                               <p className="text-white text-sm font-bold">
-                                {requiredBalance} coins required
+                                {requiredBalance.toLocaleString()} coins required
                               </p>
                               {!user && (
                                 <p className="text-white/80 text-xs mt-1">
                                   Log in to check balance
+                                </p>
+                              )}
+                              {user && !zoraWallet?.smartWallet && (
+                                <p className="text-white/80 text-xs mt-1">
+                                  Link Zora to check balance
                                 </p>
                               )}
                             </div>
