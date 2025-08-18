@@ -16,17 +16,13 @@ export class CreatorService implements CreatorServiceInterface {
 
   async fetchCreatorById(coinAddress: string): Promise<ZoraCreatorData | null> {
     try {
-      console.log('====== CREATOR SERVICE DEBUG ======');
-      console.log('Target coin address from URL:', coinAddress);
       
       const creatorData = await this.getCreatorById(coinAddress);
-      console.log('Raw API creator data:', creatorData);
       
       if (creatorData) {
         // Set initial balance data
         creatorData.userBalance = '0';
         creatorData.userBalanceDecimal = 0;
-        console.log('Setting basic creator data:', creatorData);
         return creatorData;
       }
       

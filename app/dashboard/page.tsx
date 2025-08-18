@@ -40,7 +40,6 @@ export default function Dashboard() {
   // Automatically fetch Zora coins when wallet is available
   useEffect(() => {
     if (zoraWallet?.smartWallet && zoraCoins.length === 0) {
-      console.log('Auto-fetching Zora coins for wallet:', zoraWallet.smartWallet);
       fetchZoraCoins();
     }
   }, [zoraWallet?.smartWallet, zoraCoins.length, fetchZoraCoins]);
