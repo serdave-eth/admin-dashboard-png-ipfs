@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { verifyAuthToken } from '@/lib/auth';
+import { setCurrentUserWallet } from '@/lib/rls';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,10 +14,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Set RLS context for the authenticated user
+    await setCurrentUserWallet(prisma, primaryWalletAddress);
+
     // Get wallet linking information from database using Prisma ORM
-    const walletLink = await prisma.walletLink.findUnique({
+    // RLS policy ensures only user's own wallet links are returned
+    const walletLink = await prisma.wallet_links.findUnique({
       where: { 
-        primaryWalletAddress: primaryWalletAddress 
+        user_wallet_address: primaryWalletAddress 
       }
     });
 
@@ -24,9 +29,9 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         primaryWallet: primaryWalletAddress,
-        zoraWallet: walletLink?.zoraWalletAddress || null,
-        linkedAt: walletLink?.linkedAt || null,
-        isLinked: Boolean(walletLink?.zoraWalletAddress)
+        zoraWallet: walletLink?.zora_wallet_address || null,
+        linkedAt: walletLink?.linked_at || null,
+        isLinked: Boolean(walletLink?.zora_wallet_address)
       }
     });
   } catch (error) {

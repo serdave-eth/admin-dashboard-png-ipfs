@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
-import { Content } from '@prisma/client';
+import { content } from '@prisma/client';
 import { verifyAuthToken } from '@/lib/auth';
+import { setCurrentUserWallet } from '@/lib/rls';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,14 +15,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Set RLS context for the authenticated user
+    await setCurrentUserWallet(prisma, walletAddress);
+
     const searchParams = request.nextUrl.searchParams;
     const cursor = searchParams.get('cursor');
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     const where = {
-      userWalletAddress: walletAddress,
+      // Note: user_wallet_address filter is now handled by RLS policy
+      // but keeping it for explicit filtering and better query optimization
+      user_wallet_address: walletAddress,
       ...(cursor && {
-        createdAt: {
+        created_at: {
           lt: new Date(cursor),
         },
       }),
@@ -31,18 +37,18 @@ export async function GET(request: NextRequest) {
       where,
       take: limit + 1,
       orderBy: {
-        createdAt: 'desc',
+        created_at: 'desc',
       },
     });
 
     const hasMore = items.length > limit;
     const itemsToReturn = hasMore ? items.slice(0, -1) : items;
-    const nextCursor = hasMore ? items[items.length - 2].createdAt.toISOString() : null;
+    const nextCursor = hasMore ? items[items.length - 2].created_at.toISOString() : null;
 
     return NextResponse.json({
-      items: itemsToReturn.map((item: Content) => ({
+      items: itemsToReturn.map((item: content) => ({
         ...item,
-        fileSize: item.fileSize.toString(),
+        fileSize: item.file_size.toString(),
       })),
       nextCursor,
       hasMore,

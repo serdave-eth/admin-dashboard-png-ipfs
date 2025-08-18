@@ -4,6 +4,8 @@ import { prisma } from '@/lib/database';
 import { MAX_FILE_SIZE, ALLOWED_FILE_TYPES } from '@/types';
 import { verifyAuthToken } from '@/lib/auth';
 import { encryptBuffer, getEncryptionKey } from '@/lib/encryption';
+import { setCurrentUserWallet } from '@/lib/rls';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +17,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Set RLS context for the authenticated user
+    await setCurrentUserWallet(prisma, walletAddress);
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -67,13 +72,14 @@ export async function POST(request: NextRequest) {
     // Save to database
     const content = await prisma.content.create({
       data: {
-        userWalletAddress: walletAddress,
+        id: randomUUID(),
+        user_wallet_address: walletAddress,
         filename: file.name,
-        fileType: file.type,
-        fileSize: BigInt(size),
-        ipfsCid: cid,
-        coinContractAddress: coinContractAddress || null,
-        minimumTokenAmount: minimumTokenAmount || null,
+        file_type: file.type,
+        file_size: BigInt(size),
+        ipfs_cid: cid,
+        coin_contract_address: coinContractAddress || null,
+        minimum_token_amount: minimumTokenAmount || null,
       },
     });
 
@@ -88,7 +94,7 @@ export async function POST(request: NextRequest) {
       cid,
       content: {
         ...content,
-        fileSize: content.fileSize.toString(),
+        fileSize: content.file_size.toString(),
       },
     });
   } catch (error) {

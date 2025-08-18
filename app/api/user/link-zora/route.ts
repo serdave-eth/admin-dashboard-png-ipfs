@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { verifyAuthToken } from '@/lib/auth';
+import { setCurrentUserWallet } from '@/lib/rls';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +14,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Set RLS context for the authenticated user
+    await setCurrentUserWallet(prisma, primaryWalletAddress);
 
     // Extract Zora wallet address from user's linked accounts
     const authHeader = request.headers.get('authorization');
@@ -69,18 +74,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert wallet linking information using Prisma ORM
-    await prisma.walletLink.upsert({
+    await prisma.wallet_links.upsert({
       where: { 
-        primaryWalletAddress: primaryWalletAddress 
+        user_wallet_address: primaryWalletAddress 
       },
       create: { 
-        primaryWalletAddress: primaryWalletAddress,
-        zoraWalletAddress: zoraWalletAddress,
-        linkedAt: new Date()
+        id: randomUUID(),
+        user_wallet_address: primaryWalletAddress,
+        zora_wallet_address: zoraWalletAddress,
+        linked_at: new Date()
       },
       update: { 
-        zoraWalletAddress: zoraWalletAddress,
-        linkedAt: new Date()
+        zora_wallet_address: zoraWalletAddress,
+        linked_at: new Date()
       }
     });
 
