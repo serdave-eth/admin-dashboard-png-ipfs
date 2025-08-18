@@ -28,3 +28,13 @@ model Content {
   @@index([createdAt])
   @@map("content")
 }
+
+model WalletLink {
+  id                    String   @id @default(cuid())
+  primaryWalletAddress  String   @unique @map("primary_wallet_address")
+  zoraWalletAddress     String?  @map("zora_wallet_address")
+  linkedAt              DateTime @default(now()) @map("linked_at")
+  
+  @@index([primaryWalletAddress])
+  @@map("wallet_links")
+}

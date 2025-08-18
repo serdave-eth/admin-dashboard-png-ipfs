@@ -68,15 +68,21 @@ export async function POST(request: NextRequest) {
       zoraWalletAddress = primaryWalletAddress; // For external wallets, they should be the same
     }
 
-    // Upsert wallet linking information
-    await prisma.$executeRaw`
-      INSERT INTO wallet_links (primary_wallet_address, zora_wallet_address, linked_at)
-      VALUES (${primaryWalletAddress}, ${zoraWalletAddress}, NOW())
-      ON CONFLICT (primary_wallet_address)
-      DO UPDATE SET 
-        zora_wallet_address = EXCLUDED.zora_wallet_address,
-        linked_at = NOW()
-    `;
+    // Upsert wallet linking information using Prisma ORM
+    await prisma.walletLink.upsert({
+      where: { 
+        primaryWalletAddress: primaryWalletAddress 
+      },
+      create: { 
+        primaryWalletAddress: primaryWalletAddress,
+        zoraWalletAddress: zoraWalletAddress,
+        linkedAt: new Date()
+      },
+      update: { 
+        zoraWalletAddress: zoraWalletAddress,
+        linkedAt: new Date()
+      }
+    });
 
     return NextResponse.json({
       success: true,

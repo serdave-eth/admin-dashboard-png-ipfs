@@ -13,11 +13,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Clear Zora wallet linking from database
-    await prisma.$executeRaw`
-      DELETE FROM wallet_links 
-      WHERE primary_wallet_address = ${primaryWalletAddress}
-    `;
+    // Clear Zora wallet linking from database using Prisma ORM
+    await prisma.walletLink.deleteMany({
+      where: { 
+        primaryWalletAddress: primaryWalletAddress 
+      }
+    });
 
     return NextResponse.json({
       success: true,
