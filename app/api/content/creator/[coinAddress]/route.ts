@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
-import { Content } from '@prisma/client';
+import { content } from '@prisma/client';
 
 export async function GET(
   request: NextRequest,
@@ -21,9 +21,9 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     const where = {
-      coinContractAddress: coinAddress,
+      coin_contract_address: coinAddress,
       ...(cursor && {
-        createdAt: {
+        created_at: {
           lt: new Date(cursor),
         },
       }),
@@ -33,18 +33,18 @@ export async function GET(
       where,
       take: limit + 1,
       orderBy: {
-        createdAt: 'desc',
+        created_at: 'desc',
       },
     });
 
     const hasMore = items.length > limit;
     const itemsToReturn = hasMore ? items.slice(0, -1) : items;
-    const nextCursor = hasMore ? items[items.length - 2].createdAt.toISOString() : null;
+    const nextCursor = hasMore ? items[items.length - 2].created_at.toISOString() : null;
 
     return NextResponse.json({
-      items: itemsToReturn.map((item: Content) => ({
+      items: itemsToReturn.map((item: content) => ({
         ...item,
-        fileSize: item.fileSize.toString(),
+        fileSize: item.file_size.toString(),
       })),
       nextCursor,
       hasMore,

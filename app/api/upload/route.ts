@@ -5,6 +5,7 @@ import { MAX_FILE_SIZE, ALLOWED_FILE_TYPES } from '@/types';
 import { verifyAuthToken } from '@/lib/auth';
 import { encryptBuffer, getEncryptionKey } from '@/lib/encryption';
 import { setCurrentUserWallet } from '@/lib/rls';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
     // Save to database
     const content = await prisma.content.create({
       data: {
+        id: randomUUID(),
         user_wallet_address: walletAddress,
         filename: file.name,
         file_type: file.type,

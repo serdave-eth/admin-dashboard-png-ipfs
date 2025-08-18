@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
-import { Content } from '@prisma/client';
+import { content } from '@prisma/client';
 import { verifyAuthToken } from '@/lib/auth';
 import { setCurrentUserWallet } from '@/lib/rls';
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const nextCursor = hasMore ? items[items.length - 2].created_at.toISOString() : null;
 
     return NextResponse.json({
-      items: itemsToReturn.map((item: Content) => ({
+      items: itemsToReturn.map((item: content) => ({
         ...item,
         fileSize: item.file_size.toString(),
       })),

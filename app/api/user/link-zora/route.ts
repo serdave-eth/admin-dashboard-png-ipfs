@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { verifyAuthToken } from '@/lib/auth';
 import { setCurrentUserWallet } from '@/lib/rls';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
         user_wallet_address: primaryWalletAddress 
       },
       create: { 
+        id: randomUUID(),
         user_wallet_address: primaryWalletAddress,
         zora_wallet_address: zoraWalletAddress,
         linked_at: new Date()
