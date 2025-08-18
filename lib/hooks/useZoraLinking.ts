@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { usePrivy, useCrossAppAccounts } from '@privy-io/react-auth';
-import { toast } from 'sonner';
 import { getProfileBalances } from '@zoralabs/coins-sdk';
 import { ethers } from 'ethers';
 
@@ -183,7 +182,6 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     }
 
     if (hasZoraLinked) {
-      toast.info('Zora account already linked');
       return;
     }
 
@@ -211,7 +209,6 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
         throw new Error(errorData.error || 'Failed to save Zora linking information');
       }
 
-      toast.success('Zora account linked successfully!');
       
       // Refetch the stored wallet data
       const walletResponse = await fetch('/api/user/zora-wallet', {
@@ -244,7 +241,6 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
       }
       
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setIsLinking(false);
     }
@@ -272,7 +268,6 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
         throw new Error(errorData.error || 'Failed to clear Zora linking');
       }
 
-      toast.success('Zora linking cleared successfully!');
       
       // Clear stored wallet data
       setStoredZoraWallet(null);
@@ -288,7 +283,6 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
       }
       
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setIsClearing(false);
     }
