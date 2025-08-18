@@ -29,6 +29,7 @@ export default function ContentFeed({ refreshTrigger }: { refreshTrigger: number
       const response = await fetch(url.toString(), {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
+          'X-Wallet-Address': user.wallet?.address || '',
         },
       });
 

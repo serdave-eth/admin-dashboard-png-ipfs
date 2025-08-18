@@ -38,11 +38,6 @@ export default function CreatorPage() {
   const { login, ready, user } = usePrivy();
   const userBalance = creator?.userBalanceDecimal || 0;
   
-  // Debug useZoraLinking hook values
-  console.log('=== CREATOR PAGE RENDER ===');
-  console.log('zoraWallet:', zoraWallet);
-  console.log('zoraCoins length:', zoraCoins.length);
-  console.log('fetchZoraCoins function:', typeof fetchZoraCoins);
   
   // Initialize services
   const creatorService = useMemo(() => createCreatorService(getCreatorById), []);
@@ -73,40 +68,6 @@ export default function CreatorPage() {
     return balanceUtils.getUserBalanceForCoin(coinAddress, zoraCoins);
   }, [zoraCoins, balanceUtils]);
   
-  // Debug user balance calculation
-  useEffect(() => {
-    if (creator) {
-      console.log('=== DEBUGGING BALANCE CALCULATION ===');
-      console.log('Current creator state:', creator);
-      console.log('User balance from creator:', userBalance);
-      console.log('Zora wallet smart wallet:', zoraWallet?.smartWallet);
-      console.log('Zora coins available:', zoraCoins.length);
-      
-      if (zoraCoins.length > 0) {
-        console.log('First few Zora coins:', zoraCoins.slice(0, 3));
-        console.log('Looking for coin with address:', coinAddress);
-        
-        const matchingCoin = zoraCoins.find(coin => 
-          coin.coin?.address?.toLowerCase() === coinAddress.toLowerCase()
-        );
-        console.log('Matching coin found:', matchingCoin);
-        
-        if (matchingCoin) {
-          console.log('Matching coin details:', {
-            address: matchingCoin.coin?.address,
-            name: matchingCoin.coin?.name,
-            symbol: matchingCoin.coin?.symbol,
-            balance: matchingCoin.balance,
-            balanceDecimal: matchingCoin.balanceDecimal,
-            decimals: matchingCoin.decimals,
-            isOwner: matchingCoin.isOwner
-          });
-        }
-      }
-      
-      balanceUtils.debugBalanceCalculation(creator, userBalance);
-    }
-  }, [creator, userBalance, balanceUtils, zoraCoins, coinAddress, zoraWallet?.smartWallet]);
 
   // Fetch creator data using creator service
   useEffect(() => {
@@ -115,8 +76,6 @@ export default function CreatorPage() {
       
       setIsLoadingCreator(true);
       try {
-        console.log('User wallet address:', userWalletAddress);
-        
         const creatorData = await creatorService.fetchCreatorById(coinAddress);
         
         if (creatorData) {
@@ -137,64 +96,29 @@ export default function CreatorPage() {
 
   // Fetch Zora coins when component mounts and Zora wallet is available
   useEffect(() => {
-    console.log('=== CHECKING IF SHOULD FETCH ZORA COINS ===');
-    console.log('Zora wallet exists:', !!zoraWallet);
-    console.log('Zora wallet smart wallet:', zoraWallet?.smartWallet);
-    console.log('Zora coins already loaded:', zoraCoins.length);
-    
     if (zoraWallet?.smartWallet && zoraCoins.length === 0) {
-      console.log('=== FETCHING ZORA COINS ===');
       fetchZoraCoins();
-    } else {
-      console.log('=== NOT FETCHING ZORA COINS ===');
-      console.log('Reason: No smart wallet or coins already loaded');
     }
   }, [zoraWallet, zoraCoins.length, fetchZoraCoins]);
 
   // Update user balance when zoraCoins are available
   useEffect(() => {
-    console.log('=== BALANCE UPDATE EFFECT TRIGGERED ===');
-    console.log('Effect dependencies:', {
-      creator: !!creator,
-      coinAddress,
-      zoraCoinsLength: zoraCoins.length,
-      zoraWalletSmartWallet: zoraWallet?.smartWallet
-    });
-    
     if (creator && coinAddress && zoraCoins.length > 0) {
-      console.log('=== UPDATING USER BALANCE FROM ZORA COINS ===');
-      console.log('Creator coin address:', coinAddress);
-      console.log('Zora coins available:', zoraCoins.length);
-      console.log('Zora coins data:', zoraCoins);
-      
       const balanceData = getUserBalanceForCoin(coinAddress);
-      console.log('Balance data returned from getUserBalanceForCoin:', balanceData);
-      
       const updatedCreator = creatorService.updateCreatorBalance(creator, balanceData);
-      console.log('Updated creator with balance:', updatedCreator);
-      console.log('User balance decimal:', updatedCreator.userBalanceDecimal);
       
       // Only update if the balance actually changed
       if (updatedCreator.userBalanceDecimal !== creator.userBalanceDecimal) {
         setCreator(updatedCreator);
       }
-    } else {
-      console.log('=== BALANCE UPDATE CONDITIONS NOT MET ===');
-      console.log('Creator exists:', !!creator);
-      console.log('Coin address:', coinAddress);
-      console.log('Zora coins length:', zoraCoins.length);
-      console.log('Zora wallet smart wallet:', zoraWallet?.smartWallet);
-      
-      if (!creator) console.log('❌ Missing: creator');
-      if (!coinAddress) console.log('❌ Missing: coinAddress');
-      if (zoraCoins.length === 0) console.log('❌ Missing: zoraCoins (length is 0)');
-      if (!zoraWallet?.smartWallet) console.log('❌ Missing: zoraWallet.smartWallet');
     }
   }, [creator, coinAddress, zoraCoins, getUserBalanceForCoin, creatorService, zoraWallet?.smartWallet]);
 
   // Fetch content using content service
   const fetchContent = useCallback(async (cursor?: string) => {
-    if (!coinAddress) return;
+    if (!coinAddress) {
+      return;
+    }
     
     try {
       setLoading(true);
@@ -443,10 +367,10 @@ export default function CreatorPage() {
                       {/* Content Info */}
                       <div className="p-4">
                         <h3 className="font-anton text-lg text-black mb-2 tracking-wide truncate">
-                          {content.filename.replace(/\.[^/.]+$/, "").toUpperCase()}
+                          {(content.filename || 'Untitled').replace(/\.[^/.]+$/, "").toUpperCase()}
                         </h3>
                         <p className="text-black/70 text-sm mb-3">
-                          {content.fileType.toLowerCase().startsWith('image/') ? 'IMAGE' : content.fileType.toUpperCase()} • {formatRelativeTime(new Date(content.createdAt))}
+                          {content.fileType?.toLowerCase().startsWith('image/') ? 'IMAGE' : content.fileType?.toUpperCase() || 'FILE'} • {formatRelativeTime(new Date(content.createdAt))}
                         </p>
 
 

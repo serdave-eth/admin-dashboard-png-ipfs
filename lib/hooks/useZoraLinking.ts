@@ -413,8 +413,8 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
       } while (true);
 
       // Log total fetched balances before filtering
-      console.log(`[Zora Coins Debug] ====== TOTAL FETCHED BALANCES: ${allBalances.length} ======`);
-      console.log(`[Zora Coins Debug] All fetched coins:`, allBalances.map(b => ({
+      console.log(`[Zora Coins Debug] ====== TOTAL FETCHED BALANCES: ${allBalances?.length || 0} ======`);
+      console.log(`[Zora Coins Debug] All fetched coins:`, (allBalances || []).map(b => ({
         name: b.coin?.name,
         symbol: b.coin?.symbol,
         address: b.coin?.address,
@@ -423,13 +423,13 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
       
       // Check creator status for all coins and show all coins with balance > 0
       console.log(`[Zora Coins Debug] ====== CHECKING CREATOR STATUS ======`);
-      console.log(`[Zora Coins Debug] Processing ${allBalances.length} coins with balances...`);
+      console.log(`[Zora Coins Debug] Processing ${allBalances?.length || 0} coins with balances...`);
       
       const processedBalances: CoinBalance[] = [];
       
-      for (let i = 0; i < allBalances.length; i++) {
-        const balance = allBalances[i];
-        console.log(`[Zora Coins Debug] [${i + 1}/${allBalances.length}] Processing coin:`, {
+      for (let i = 0; i < (allBalances?.length || 0); i++) {
+        const balance = allBalances![i];
+        console.log(`[Zora Coins Debug] [${i + 1}/${allBalances?.length || 0}] Processing coin:`, {
           name: balance.coin?.name,
           symbol: balance.coin?.symbol,
           address: balance.coin?.address,
@@ -466,14 +466,14 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
             // Don't add coins with 0 balance
           }
         } else {
-          console.log(`[Zora Coins Debug] ⚠️ SKIPPED - No contract address for coin ${i + 1}/${allBalances.length}`);
+          console.log(`[Zora Coins Debug] ⚠️ SKIPPED - No contract address for coin ${i + 1}/${allBalances?.length || 0}`);
         }
       }
       
       setZoraCoins(processedBalances);
       console.log(`[Zora Coins Debug] ====== FINAL RESULTS ======`);
-      console.log(`[Zora Coins Debug] Showing ${processedBalances.length} coins with balances out of ${allBalances.length} total coins`);
-      console.log(`[Zora Coins Debug] Final coins list:`, processedBalances.map(b => ({
+      console.log(`[Zora Coins Debug] Showing ${processedBalances?.length || 0} coins with balances out of ${allBalances?.length || 0} total coins`);
+      console.log(`[Zora Coins Debug] Final coins list:`, (processedBalances || []).map(b => ({
         name: b.coin?.name,
         symbol: b.coin?.symbol,
         balance: b.balanceDecimal,

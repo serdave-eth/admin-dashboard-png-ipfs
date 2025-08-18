@@ -133,16 +133,18 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Upload and Content Sections - Only show when Zora is linked */}
-      {hasZoraLinked && zoraWallet?.smartWallet && (
+      {/* Upload and Content Sections - Always show for authenticated users */}
+      {authenticated && user && (
         <>
-          {/* Upload Section */}
-          <div className="mt-8 bg-white rounded-2xl p-6 border border-gray-200">
-            <h3 className="font-bold text-black mb-4">Upload Content</h3>
-            <UploadForm onUploadSuccess={handleUploadSuccess} />
-          </div>
+          {/* Upload Section - Only show when Zora is linked */}
+          {hasZoraLinked && zoraWallet?.smartWallet && (
+            <div className="mt-8 bg-white rounded-2xl p-6 border border-gray-200">
+              <h3 className="font-bold text-black mb-4">Upload Content</h3>
+              <UploadForm onUploadSuccess={handleUploadSuccess} />
+            </div>
+          )}
 
-          {/* Content Section */}
+          {/* Content Section - Always show for authenticated users */}
           <div className="mt-8 bg-white rounded-2xl p-6 border border-gray-200">
             <h3 className="font-bold text-black mb-4">Your Content</h3>
             <ContentFeed refreshTrigger={refreshTrigger} />

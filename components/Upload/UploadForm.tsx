@@ -120,6 +120,7 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
 
       xhr.open('POST', '/api/upload');
       xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+      xhr.setRequestHeader('X-Wallet-Address', user?.wallet?.address || '');
       xhr.send(formData);
     } catch (error) {
       console.error('Upload error:', error);
