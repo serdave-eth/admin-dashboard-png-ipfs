@@ -130,7 +130,6 @@ export default function UploadForm({ onUploadSuccess }: { onUploadSuccess: () =>
 
   return (
     <div className="bg-white rounded-lg shadow-md p-8">
-      <h2 className="text-xl font-bold mb-6">Upload File</h2>
       
       {!file ? (
         <FileDropzone onFileSelect={handleFileSelect} />

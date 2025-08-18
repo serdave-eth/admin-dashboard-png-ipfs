@@ -48,8 +48,8 @@ export default function Dashboard() {
   const renderCreatorsSection = () => (
     <div className="max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-black mb-2">YOUR CREATOR COINS</h1>
-        <p className="text-gray-600">Manage the creator coins you own</p>
+        <h1 className="text-3xl font-anton text-black mb-2 tracking-wide">COINS YOU CREATED</h1>
+        <p className="text-gray-600">Manage the coins you created</p>
       </div>
 
       {hasZoraLinked && zoraWallet?.smartWallet ? (
@@ -107,12 +107,6 @@ export default function Dashboard() {
                         </span>
                       </div>
                     )}
-                    
-                    <div className="mt-2 text-center">
-                      <span className="px-2 py-1 text-xs bg-black text-white rounded-full font-bold">
-                        🎨 CREATOR
-                      </span>
-                    </div>
                   </div>
                 </Link>
               ))}
@@ -128,7 +122,7 @@ export default function Dashboard() {
         </>
       ) : (
         <div className="text-center py-8">
-          <p className="text-black font-bold mb-2">Connect your Zora account to see your creator coins</p>
+          <p className="text-black font-bold mb-4">Connect your Zora account to see the coins you created</p>
           <button
             onClick={linkZora}
             disabled={isLinking}
@@ -159,8 +153,8 @@ export default function Dashboard() {
   );
 
   const renderSupportersSection = () => (
-    <div>
-      <div className="mb-6">
+    <div className="max-w-4xl">
+      <div className="mb-8">
         <h1 className="text-3xl font-anton text-black mb-2 tracking-wide">CREATORS YOU SUPPORT</h1>
         <p className="text-gray-600">View the creators you support with your coin holdings</p>
       </div>
@@ -195,10 +189,16 @@ export default function Dashboard() {
                       </div>
                     </div>
                     
-                    <div className="bg-gray-50 rounded-lg p-2 text-center border border-gray-200">
-                      <div className="text-gray-600">Your Balance</div>
-                      <div className="text-black font-bold">
-                        {balance.balanceDecimal ? Math.floor(balance.balanceDecimal).toLocaleString() : '0'}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-gray-50 rounded-lg p-2 text-center border border-gray-200">
+                        <div className="text-gray-600">Your Balance</div>
+                        <div className="text-black font-bold">
+                          {balance.balanceDecimal ? Math.floor(balance.balanceDecimal).toLocaleString() : '0'}
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-2 text-center border border-gray-200">
+                        <div className="text-gray-600">Holders</div>
+                        <div className="text-black font-bold">{balance.coin?.uniqueHolders || 0}</div>
                       </div>
                     </div>
                   </div>
@@ -214,7 +214,7 @@ export default function Dashboard() {
         </>
       ) : (
         <div className="text-center py-8">
-          <p className="text-black font-bold mb-2">Connect your Zora account to see supported creators</p>
+          <p className="text-black font-bold mb-4">Connect your Zora account to see your supported creators</p>
           <button
             onClick={linkZora}
             disabled={isLinking}
@@ -326,7 +326,7 @@ export default function Dashboard() {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 pt-16 ml-0 md:ml-64">
+          <div className="flex-1 pt-8 ml-0 md:ml-64">
             {/* Mobile Navigation Tabs */}
             <div className="md:hidden bg-white border-b border-gray-200 px-4 py-2">
               <div className="flex space-x-1">
@@ -362,7 +362,7 @@ export default function Dashboard() {
                 </button>
               </div>
             </div>
-            <main className={`w-full px-4 sm:px-6 lg:px-8 py-8 ${activeSection === 'creators' ? 'pr-4' : 'pr-24'} md:pr-48 lg:pr-64 xl:pr-80`}>
+            <main className={`w-full px-4 sm:px-6 lg:px-8 py-4 ${activeSection === 'creators' || activeSection === 'supporters' ? 'pr-4' : 'pr-24'} md:pr-48 lg:pr-64 xl:pr-80`}>
               {activeSection === 'creators' && renderCreatorsSection()}
               {activeSection === 'supporters' && renderSupportersSection()}
               {activeSection === 'wallets' && renderWalletsSection()}

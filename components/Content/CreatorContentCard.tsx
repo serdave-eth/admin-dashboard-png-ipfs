@@ -122,7 +122,7 @@ const CreatorContentCard: React.FC<CreatorContentCardProps> = ({
             <div className="text-center">
               <Lock className="w-8 h-8 text-white mb-2 mx-auto" />
               <p className="text-white text-sm font-bold">
-                {content.requiredBalance} coins required
+                {content.requiredBalance.toLocaleString()} coins required
               </p>
             </div>
           </div>
