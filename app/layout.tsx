@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Backstage - Admin Dashboard',
+  title: 'Backstage',
   description: 'Upload and manage your content on IPFS with token-gated access',
 };
 
