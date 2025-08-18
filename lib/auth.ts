@@ -39,17 +39,26 @@ export async function verifyAuthToken(request: NextRequest): Promise<string | nu
         const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
         console.log('Dev mode - Token payload:', JSON.stringify(payload, null, 2));
         
-        // Extract wallet address from various possible locations in token
-        const walletAddress = 
-          payload.wallet?.address ||
-          payload.linkedAccounts?.find((acc: { type: string; address?: string }) => 
-            acc.type === 'wallet' && acc.address
-          )?.address ||
-          payload.sub ||
-          payload.userId;
-          
+        // The Privy token contains a DID (did:privy:...) not a wallet address
+        // We need to extract the actual wallet address from linkedAccounts or make an API call
+        // For now, let's check if there are linkedAccounts in the payload
+        let walletAddress: string | null = null;
+        
+        // First try to find wallet address in linkedAccounts
+        if (payload.linkedAccounts && Array.isArray(payload.linkedAccounts)) {
+          const walletAccount = payload.linkedAccounts.find((acc: { type: string; address?: string }) => 
+            acc.type === 'wallet' && acc.address && acc.address.startsWith('0x')
+          );
+          walletAddress = walletAccount?.address || null;
+        }
+        
+        // If no wallet found in linkedAccounts, we have a problem
         if (!walletAddress) {
-          console.error('No wallet address found in dev mode token payload');
+          console.error('No wallet address found in token. Token contains Privy DID but no linked wallet address.');
+          console.error('This suggests the user needs to link a wallet or the token structure has changed.');
+          
+          // For development purposes, you might want to handle this differently
+          // For now, we'll return null to maintain security
           return null;
         }
         

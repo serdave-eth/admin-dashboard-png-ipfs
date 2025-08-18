@@ -47,8 +47,15 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       items: itemsToReturn.map((item: content) => ({
-        ...item,
+        id: item.id,
+        user_wallet_address: item.user_wallet_address,
+        filename: item.filename,
+        file_type: item.file_type,
         fileSize: item.file_size.toString(),
+        ipfs_cid: item.ipfs_cid,
+        created_at: item.created_at,
+        coin_contract_address: item.coin_contract_address,
+        minimum_token_amount: item.minimum_token_amount,
       })),
       nextCursor,
       hasMore,
