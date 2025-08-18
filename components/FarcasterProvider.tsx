@@ -5,7 +5,7 @@ import { sdk } from '@farcaster/miniapp-sdk';
 
 interface FarcasterContextType {
   isReady: boolean;
-  sdkContext: any;
+  sdkContext: unknown;
 }
 
 const FarcasterContext = createContext<FarcasterContextType | undefined>(undefined);
@@ -24,7 +24,7 @@ interface FarcasterProviderProps {
 
 export function FarcasterProvider({ children }: FarcasterProviderProps) {
   const [isReady, setIsReady] = useState(false);
-  const [sdkContext, setSdkContext] = useState(null);
+  const [sdkContext, setSdkContext] = useState<unknown>(null);
 
   useEffect(() => {
     async function initializeFarcaster() {
@@ -32,7 +32,8 @@ export function FarcasterProvider({ children }: FarcasterProviderProps) {
         // Initialize the Farcaster miniapp SDK
         await sdk.actions.ready();
         setIsReady(true);
-        setSdkContext(sdk.context);
+        const context = await sdk.context;
+        setSdkContext(context);
         console.log('Farcaster miniapp SDK initialized');
       } catch (error) {
         console.error('Failed to initialize Farcaster SDK:', error);
