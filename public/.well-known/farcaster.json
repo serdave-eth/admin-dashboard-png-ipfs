@@ -1,0 +1,16 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjEyMzQ1LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4MUFCQzEyMy4uLiJ9",
+    "payload": "eyJkb21haW4iOiJiYWNrc3RhZ2VkLnh5eiJ9",
+    "signature": "MHg5OUZGRkZGRi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4="
+  },
+  "version": "1",
+  "name": "Backstage",
+  "homeUrl": "https://backstaged.xyz",
+  "iconUrl": "https://backstaged.xyz/favicon.png",
+  "splashImageUrl": "https://backstaged.xyz/favicon.png",
+  "splashBackgroundColor": "#000000",
+  "subtitle": "Creator Economy Platform",
+  "description": "Support creators through coin ownership and unlock exclusive content. Upload and manage your content on IPFS with token-gated access.",
+  "primaryCategory": "social"
+}

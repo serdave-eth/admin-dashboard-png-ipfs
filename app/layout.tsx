@@ -19,6 +19,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Backstage',
   description: 'Upload and manage your content on IPFS with token-gated access',
+  other: {
+    'fc:miniapp': 'true',
+    'fc:miniapp:image': 'https://backstaged.xyz/favicon.png',
+    'fc:miniapp:button': 'Open Backstage',
+    'fc:miniapp:action': 'https://backstaged.xyz',
+  },
 };
 
 export default function RootLayout({
