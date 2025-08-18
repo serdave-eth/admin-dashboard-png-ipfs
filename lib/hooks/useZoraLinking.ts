@@ -374,7 +374,6 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
         }
 
       } while (true);
-
       
       // Check creator status for all coins and show all coins with balance > 0
       
@@ -382,6 +381,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
       
       for (let i = 0; i < allBalances.length; i++) {
         const balance = allBalances[i];
+
         
         if (balance.coin?.address) {
           const { hasBalance, decimals, balance: rawBalance, isOwner } = await checkCoinBalance(balance.coin.address, zoraWallet.smartWallet);

@@ -67,14 +67,6 @@ export default function CreatorPage() {
   const getUserBalanceForCoin = useCallback((coinAddress: string) => {
     return balanceUtils.getUserBalanceForCoin(coinAddress, zoraCoins);
   }, [zoraCoins, balanceUtils]);
-  
-  // Debug user balance calculation
-  useEffect(() => {
-    if (creator) {
-      
-      balanceUtils.debugBalanceCalculation(creator, userBalance);
-    }
-  }, [creator, userBalance, balanceUtils, zoraCoins, coinAddress, zoraWallet?.smartWallet]);
 
   // Fetch creator data using creator service
   useEffect(() => {
@@ -83,7 +75,6 @@ export default function CreatorPage() {
       
       setIsLoadingCreator(true);
       try {
-        
         const creatorData = await creatorService.fetchCreatorById(coinAddress);
         
         if (creatorData) {
@@ -124,7 +115,9 @@ export default function CreatorPage() {
 
   // Fetch content using content service
   const fetchContent = useCallback(async (cursor?: string) => {
-    if (!coinAddress) return;
+    if (!coinAddress) {
+      return;
+    }
     
     try {
       setLoading(true);
@@ -373,10 +366,10 @@ export default function CreatorPage() {
                       {/* Content Info */}
                       <div className="p-4">
                         <h3 className="font-anton text-lg text-black mb-2 tracking-wide truncate">
-                          {content.filename.replace(/\.[^/.]+$/, "").toUpperCase()}
+                          {(content.filename || 'Untitled').replace(/\.[^/.]+$/, "").toUpperCase()}
                         </h3>
                         <p className="text-black/70 text-sm mb-3">
-                          {content.fileType.toLowerCase().startsWith('image/') ? 'IMAGE' : content.fileType.toUpperCase()} • {formatRelativeTime(new Date(content.createdAt))}
+                          {content.fileType?.toLowerCase().startsWith('image/') ? 'IMAGE' : content.fileType?.toUpperCase() || 'FILE'} • {formatRelativeTime(new Date(content.createdAt))}
                         </p>
 
 

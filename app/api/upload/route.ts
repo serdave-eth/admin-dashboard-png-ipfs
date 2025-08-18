@@ -88,8 +88,15 @@ export async function POST(request: NextRequest) {
       success: true,
       cid,
       content: {
-        ...content,
+        id: content.id,
+        user_wallet_address: content.user_wallet_address,
+        filename: content.filename,
+        file_type: content.file_type,
         fileSize: content.file_size.toString(),
+        ipfs_cid: content.ipfs_cid,
+        created_at: content.created_at,
+        coin_contract_address: content.coin_contract_address,
+        minimum_token_amount: content.minimum_token_amount,
       },
     });
   } catch (error) {

@@ -24,8 +24,18 @@ export interface BalanceUtilsInterface {
 export class BalanceUtils implements BalanceUtilsInterface {
   getUserBalanceForCoin(coinAddress: string, zoraCoins: ZoraCoin[]): BalanceData {
     
-    const userCoin = zoraCoins.find(zc => 
-      zc.coin?.address?.toLowerCase() === coinAddress?.toLowerCase()
+    // Add null checks before calling toLowerCase
+    if (!coinAddress) {
+      console.log('No coinAddress provided');
+      return {
+        rawBalance: '0',
+        balanceDecimal: 0,
+        decimals: 18
+      };
+    }
+    
+    const userCoin = (zoraCoins || []).find(zc => 
+      zc.coin?.address?.toLowerCase() === coinAddress.toLowerCase()
     );
     
     if (userCoin) {
