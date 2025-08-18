@@ -19,9 +19,9 @@ export async function DELETE(request: NextRequest) {
 
     // Clear Zora wallet linking from database using Prisma ORM
     // RLS policy ensures only user's own wallet links can be deleted
-    await prisma.walletLink.deleteMany({
+    await prisma.wallet_links.deleteMany({
       where: { 
-        primaryWalletAddress: primaryWalletAddress 
+        user_wallet_address: primaryWalletAddress 
       }
     });
 

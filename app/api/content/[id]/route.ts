@@ -27,8 +27,8 @@ export async function DELETE(
     const content = await prisma.content.findFirst({
       where: {
         id: contentId,
-        // userWalletAddress filter now handled by RLS policy
-        userWalletAddress: primaryWalletAddress
+        // user_wallet_address filter now handled by RLS policy
+        user_wallet_address: primaryWalletAddress
       }
     });
 

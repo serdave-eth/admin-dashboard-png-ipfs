@@ -47,38 +47,41 @@ CREATE POLICY "Users can delete own content" ON content
   );
 
 -- =====================================================
--- WALLET_LINKS TABLE POLICIES
+-- WALLET_LINKS TABLE POLICIES  
 -- =====================================================
+
+-- First check if the wallet_links table exists and what columns it has
+-- If you get an error, the table might not exist or have different column names
 
 -- Policy: Users can view their own wallet links
 CREATE POLICY "Users can view own wallet links" ON wallet_links
   FOR SELECT 
   USING (
-    primary_wallet_address = current_setting('app.current_user_wallet', true)
+    user_wallet_address = current_setting('app.current_user_wallet', true)
   );
 
 -- Policy: Users can insert their own wallet links
 CREATE POLICY "Users can insert own wallet links" ON wallet_links
   FOR INSERT 
   WITH CHECK (
-    primary_wallet_address = current_setting('app.current_user_wallet', true)
+    user_wallet_address = current_setting('app.current_user_wallet', true)
   );
 
 -- Policy: Users can update their own wallet links
 CREATE POLICY "Users can update own wallet links" ON wallet_links
   FOR UPDATE 
   USING (
-    primary_wallet_address = current_setting('app.current_user_wallet', true)
+    user_wallet_address = current_setting('app.current_user_wallet', true)
   )
   WITH CHECK (
-    primary_wallet_address = current_setting('app.current_user_wallet', true)
+    user_wallet_address = current_setting('app.current_user_wallet', true)
   );
 
 -- Policy: Users can delete their own wallet links
 CREATE POLICY "Users can delete own wallet links" ON wallet_links
   FOR DELETE 
   USING (
-    primary_wallet_address = current_setting('app.current_user_wallet', true)
+    user_wallet_address = current_setting('app.current_user_wallet', true)
   );
 
 -- =====================================================

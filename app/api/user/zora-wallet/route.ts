@@ -19,13 +19,13 @@ export async function GET(request: NextRequest) {
 
     // Fetch wallet linking information from database using Prisma ORM
     // RLS policy ensures only user's own wallet links are returned
-    const walletLink = await prisma.walletLink.findUnique({
+    const walletLink = await prisma.wallet_links.findUnique({
       where: { 
-        primaryWalletAddress: primaryWalletAddress 
+        user_wallet_address: primaryWalletAddress 
       },
       select: {
-        zoraWalletAddress: true,
-        linkedAt: true
+        zora_wallet_address: true,
+        linked_at: true
       }
     });
 
@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         primaryWallet: primaryWalletAddress,
-        zoraWallet: walletLink.zoraWalletAddress,
-        linkedAt: walletLink.linkedAt
+        zoraWallet: walletLink.zora_wallet_address,
+        linkedAt: walletLink.linked_at
       }
     });
   } catch (error) {

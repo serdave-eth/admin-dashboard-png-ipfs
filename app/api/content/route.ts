@@ -23,11 +23,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     const where = {
-      // Note: userWalletAddress filter is now handled by RLS policy
+      // Note: user_wallet_address filter is now handled by RLS policy
       // but keeping it for explicit filtering and better query optimization
-      userWalletAddress: walletAddress,
+      user_wallet_address: walletAddress,
       ...(cursor && {
-        createdAt: {
+        created_at: {
           lt: new Date(cursor),
         },
       }),
@@ -37,18 +37,18 @@ export async function GET(request: NextRequest) {
       where,
       take: limit + 1,
       orderBy: {
-        createdAt: 'desc',
+        created_at: 'desc',
       },
     });
 
     const hasMore = items.length > limit;
     const itemsToReturn = hasMore ? items.slice(0, -1) : items;
-    const nextCursor = hasMore ? items[items.length - 2].createdAt.toISOString() : null;
+    const nextCursor = hasMore ? items[items.length - 2].created_at.toISOString() : null;
 
     return NextResponse.json({
       items: itemsToReturn.map((item: Content) => ({
         ...item,
-        fileSize: item.fileSize.toString(),
+        fileSize: item.file_size.toString(),
       })),
       nextCursor,
       hasMore,

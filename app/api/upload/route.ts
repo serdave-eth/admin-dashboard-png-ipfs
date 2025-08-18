@@ -71,13 +71,13 @@ export async function POST(request: NextRequest) {
     // Save to database
     const content = await prisma.content.create({
       data: {
-        userWalletAddress: walletAddress,
+        user_wallet_address: walletAddress,
         filename: file.name,
-        fileType: file.type,
-        fileSize: BigInt(size),
-        ipfsCid: cid,
-        coinContractAddress: coinContractAddress || null,
-        minimumTokenAmount: minimumTokenAmount || null,
+        file_type: file.type,
+        file_size: BigInt(size),
+        ipfs_cid: cid,
+        coin_contract_address: coinContractAddress || null,
+        minimum_token_amount: minimumTokenAmount || null,
       },
     });
 
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       cid,
       content: {
         ...content,
-        fileSize: content.fileSize.toString(),
+        fileSize: content.file_size.toString(),
       },
     });
   } catch (error) {

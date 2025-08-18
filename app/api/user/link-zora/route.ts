@@ -73,18 +73,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert wallet linking information using Prisma ORM
-    await prisma.walletLink.upsert({
+    await prisma.wallet_links.upsert({
       where: { 
-        primaryWalletAddress: primaryWalletAddress 
+        user_wallet_address: primaryWalletAddress 
       },
       create: { 
-        primaryWalletAddress: primaryWalletAddress,
-        zoraWalletAddress: zoraWalletAddress,
-        linkedAt: new Date()
+        user_wallet_address: primaryWalletAddress,
+        zora_wallet_address: zoraWalletAddress,
+        linked_at: new Date()
       },
       update: { 
-        zoraWalletAddress: zoraWalletAddress,
-        linkedAt: new Date()
+        zora_wallet_address: zoraWalletAddress,
+        linked_at: new Date()
       }
     });
 

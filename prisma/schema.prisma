@@ -8,28 +8,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Content {
-  id                  String   @id @default(cuid())
-  userWalletAddress   String   @map("user_wallet_address")
-  filename            String
-  fileType            String   @map("file_type")
-  fileSize            BigInt   @map("file_size")
-  ipfsCid             String   @unique @map("ipfs_cid")
-  createdAt           DateTime @default(now()) @map("created_at")
-  coinContractAddress String?  @map("coin_contract_address")
-  minimumTokenAmount  String?  @map("minimum_token_amount")
+model content {
+  id                    String   @id
+  user_wallet_address   String
+  filename              String
+  file_type             String
+  file_size             BigInt
+  ipfs_cid              String   @unique
+  created_at            DateTime @default(now())
+  coin_contract_address String?
+  minimum_token_amount  String?
 
-  @@index([userWalletAddress])
-  @@index([createdAt])
-  @@map("content")
+  @@index([created_at])
+  @@index([user_wallet_address])
 }
 
-model WalletLink {
-  id                   String   @id @default(cuid())
-  primaryWalletAddress String   @unique @map("primary_wallet_address")
-  zoraWalletAddress    String?  @map("zora_wallet_address")
-  linkedAt             DateTime @default(now()) @map("linked_at")
+model wallet_links {
+  id                    String   @id
+  user_wallet_address   String   @unique
+  zora_account_id       String?
+  zora_username         String?
+  created_at            DateTime @default(now())
+  zora_wallet_address   String?
+  linked_at             DateTime @default(now())
 
-  @@index([primaryWalletAddress])
-  @@map("wallet_links")
+  @@index([user_wallet_address])
 }
