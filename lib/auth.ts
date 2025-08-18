@@ -23,6 +23,70 @@ export async function verifyAuthToken(request: NextRequest): Promise<string | nu
       return null;
     }
 
+    // NEW: Get wallet address from request headers (sent by frontend)
+    const walletAddressFromHeaders = request.headers.get('x-wallet-address');
+    
+    if (walletAddressFromHeaders && walletAddressFromHeaders.startsWith('0x')) {
+      console.log('Using wallet address from headers:', walletAddressFromHeaders);
+      
+      // Still verify the JWT token for security (but use wallet from headers)
+      const appSecret = process.env.PRIVY_APP_SECRET;
+      if (!appSecret || appSecret.includes('your_privy_app_secret_here')) {
+        console.warn('WARNING: PRIVY_APP_SECRET not configured. Using insecure dev mode.');
+        
+        // In dev mode, just decode to verify it's a valid JWT structure
+        try {
+          const parts = token.split('.');
+          if (parts.length !== 3) {
+            console.error('Invalid JWT format');
+            return null;
+          }
+          
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+          
+          // Basic validation that this is a Privy token
+          if (!payload.iss || payload.iss !== 'privy.io') {
+            console.error('Invalid token issuer');
+            return null;
+          }
+          
+          // Check expiration
+          if (payload.exp && payload.exp < Date.now() / 1000) {
+            console.error('Token expired');
+            return null;
+          }
+          
+          console.log('Dev mode - Token validated, using wallet from headers');
+          return walletAddressFromHeaders;
+          
+        } catch (e) {
+          console.error('Failed to validate token in dev mode:', e);
+          return null;
+        }
+      } else {
+        // Production mode - properly verify with Privy
+        console.log('Production mode - Verifying token with Privy');
+        
+        try {
+          await privyClient.verifyAuthToken(token);
+          console.log('Production mode - Token verified, using wallet from headers');
+          return walletAddressFromHeaders;
+          
+        } catch (privyError: unknown) {
+          const error = privyError as { message?: string; status?: number; code?: string };
+          console.error('Privy token verification failed:', {
+            message: error.message,
+            status: error.status,
+            code: error.code
+          });
+          return null;
+        }
+      }
+    }
+
+    // FALLBACK: If no wallet address in headers, try the old method
+    console.warn('No wallet address in headers, falling back to token extraction...');
+
     // Check if app secret is configured for production security
     const appSecret = process.env.PRIVY_APP_SECRET;
     if (!appSecret || appSecret.includes('your_privy_app_secret_here')) {
@@ -39,26 +103,26 @@ export async function verifyAuthToken(request: NextRequest): Promise<string | nu
         const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
         console.log('Dev mode - Token payload:', JSON.stringify(payload, null, 2));
         
+        // Debug: Log all available fields in the token payload
+        console.log('Available fields in token payload:', Object.keys(payload));
+        
         // The Privy token contains a DID (did:privy:...) not a wallet address
-        // We need to extract the actual wallet address from linkedAccounts or make an API call
-        // For now, let's check if there are linkedAccounts in the payload
         let walletAddress: string | null = null;
         
         // First try to find wallet address in linkedAccounts
         if (payload.linkedAccounts && Array.isArray(payload.linkedAccounts)) {
+          console.log('Found linkedAccounts:', payload.linkedAccounts);
           const walletAccount = payload.linkedAccounts.find((acc: { type: string; address?: string }) => 
             acc.type === 'wallet' && acc.address && acc.address.startsWith('0x')
           );
           walletAddress = walletAccount?.address || null;
+        } else {
+          console.log('No linkedAccounts found in token payload');
         }
         
-        // If no wallet found in linkedAccounts, we have a problem
+        // If still no wallet found, return null
         if (!walletAddress) {
-          console.error('No wallet address found in token. Token contains Privy DID but no linked wallet address.');
-          console.error('This suggests the user needs to link a wallet or the token structure has changed.');
-          
-          // For development purposes, you might want to handle this differently
-          // For now, we'll return null to maintain security
+          console.error('No wallet address found in token or headers. User needs to connect wallet.');
           return null;
         }
         

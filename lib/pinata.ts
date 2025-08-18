@@ -62,25 +62,22 @@ class PinataClient {
 
   async fetchFile(cid: string): Promise<ArrayBuffer> {
     try {
-      const response = await axios.get(
-        `${this.gatewayUrl}/ipfs/${cid}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.jwt}`,
-          },
-          responseType: 'arraybuffer',
-          timeout: 30000, // 30 second timeout
-        }
-      );
+      const url = `${this.gatewayUrl}/ipfs/${cid}`;
+      
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `Bearer ${this.jwt}`,
+        },
+        responseType: 'arraybuffer',
+        timeout: 30000, // 30 second timeout
+      });
       
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError) {
         const status = error.response?.status || 'Network error';
-        console.error('IPFS fetch error:', status);
         throw new Error(`Failed to fetch file from IPFS: ${status}`);
       } else {
-        console.error('IPFS fetch error:', error);
         throw new Error('Failed to fetch file from IPFS: Unknown error');
       }
     }

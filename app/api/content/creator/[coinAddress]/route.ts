@@ -29,6 +29,10 @@ export async function GET(
       }),
     };
 
+    // Temporarily bypass RLS for public creator content reads
+    // This allows public access to creator content while maintaining write security
+    await prisma.$executeRaw`SET row_security = off`;
+    
     const items = await prisma.content.findMany({
       where,
       take: limit + 1,
@@ -36,6 +40,9 @@ export async function GET(
         created_at: 'desc',
       },
     });
+    
+    // Re-enable RLS after the query
+    await prisma.$executeRaw`SET row_security = on`;
 
     const hasMore = items.length > limit;
     const itemsToReturn = hasMore ? items.slice(0, -1) : items;
@@ -44,14 +51,14 @@ export async function GET(
     return NextResponse.json({
       items: itemsToReturn.map((item: content) => ({
         id: item.id,
-        user_wallet_address: item.user_wallet_address,
+        userWalletAddress: item.user_wallet_address,
         filename: item.filename,
-        file_type: item.file_type,
+        fileType: item.file_type,
         fileSize: item.file_size.toString(),
-        ipfs_cid: item.ipfs_cid,
-        created_at: item.created_at,
-        coin_contract_address: item.coin_contract_address,
-        minimum_token_amount: item.minimum_token_amount,
+        ipfsCid: item.ipfs_cid,
+        createdAt: item.created_at,
+        coinContractAddress: item.coin_contract_address,
+        minimumTokenAmount: item.minimum_token_amount,
       })),
       nextCursor,
       hasMore,

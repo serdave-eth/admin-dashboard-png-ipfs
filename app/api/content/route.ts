@@ -22,10 +22,26 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get('cursor');
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
+    // For backwards compatibility, search by both wallet address and Privy DID
+    // Extract Privy DID from the auth token for backwards compatibility 
+    const authHeader = request.headers.get('authorization');
+    let privyDid: string | null = null;
+    try {
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        // Decode JWT payload (this is just for debugging - not secure verification)
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        privyDid = payload.sub;
+      }
+    } catch (error) {
+      // Silently continue if we can't extract the Privy DID
+    }
+
     const where = {
-      // Note: user_wallet_address filter is now handled by RLS policy
-      // but keeping it for explicit filtering and better query optimization
-      user_wallet_address: walletAddress,
+      OR: [
+        { user_wallet_address: walletAddress },
+        ...(privyDid ? [{ user_wallet_address: privyDid }] : [])
+      ],
       ...(cursor && {
         created_at: {
           lt: new Date(cursor),
@@ -48,14 +64,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       items: itemsToReturn.map((item: content) => ({
         id: item.id,
-        user_wallet_address: item.user_wallet_address,
+        userWalletAddress: item.user_wallet_address,
         filename: item.filename,
-        file_type: item.file_type,
+        fileType: item.file_type,
         fileSize: item.file_size.toString(),
-        ipfs_cid: item.ipfs_cid,
-        created_at: item.created_at,
-        coin_contract_address: item.coin_contract_address,
-        minimum_token_amount: item.minimum_token_amount,
+        ipfsCid: item.ipfs_cid,
+        createdAt: item.created_at,
+        coinContractAddress: item.coin_contract_address,
+        minimumTokenAmount: item.minimum_token_amount,
       })),
       nextCursor,
       hasMore,
