@@ -38,11 +38,9 @@ export async function POST(request: NextRequest) {
       if (parts.length === 3) {
         const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
         
-        console.log('Token payload for debugging:', JSON.stringify(payload, null, 2));
         
         // Look for cross-app account in linked accounts
         const linkedAccounts = payload.linkedAccounts || [];
-        console.log('Linked accounts found:', linkedAccounts);
         
         // Try different ways to find the Zora account
         const zoraAccount = linkedAccounts.find((account: Record<string, unknown>) => 
@@ -51,7 +49,6 @@ export async function POST(request: NextRequest) {
           account.appId === (process.env.NEXT_PUBLIC_ZORA_APP_ID || 'clpgf04wn04hnkw0fv1m11mnb')
         );
         
-        console.log('Found Zora account:', zoraAccount);
         
         if (zoraAccount) {
           // Try different properties for the wallet address
@@ -69,7 +66,6 @@ export async function POST(request: NextRequest) {
     // If we still don't have a Zora wallet address from the token, 
     // use the primary wallet address since for external wallets they should be the same
     if (!zoraWalletAddress) {
-      console.log('No Zora wallet found in token, using primary wallet address for external wallet');
       zoraWalletAddress = primaryWalletAddress; // For external wallets, they should be the same
     }
 

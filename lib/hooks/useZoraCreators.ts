@@ -144,23 +144,13 @@ export const useZoraCreators = (): UseZoraCreatorsReturn => {
         const coin = response.data.zora20Token;
         
         // Get user's balance for this coin
-        console.log('=== GETTING USER BALANCE IN getCreatorById ===');
-        console.log('Looking for coinAddress:', coinAddress);
-        console.log('Available zoraCoins:', zoraCoins?.length || 0);
-        console.log('zoraCoins addresses:', zoraCoins?.map(zc => zc.coin?.address));
         
         const userCoin = zoraCoins.find(zc => zc.coin?.address === coinAddress);
-        console.log('Found userCoin:', userCoin);
         
         const userBalance = userCoin?.balance || '0';
         const userBalanceDecimal = userCoin?.balanceDecimal || 0;
         const decimals = userCoin?.decimals || 18;
         
-        console.log('Extracted balance data:', {
-          userBalance,
-          userBalanceDecimal,
-          decimals
-        });
 
         return {
           id: coin.address,

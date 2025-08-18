@@ -83,11 +83,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log('Upload successful:', {
-      fileCid: cid,
-      coinContractAddress: coinContractAddress || 'None',
-      minimumTokenAmount: minimumTokenAmount || 'None'
-    });
 
     return NextResponse.json({
       success: true,

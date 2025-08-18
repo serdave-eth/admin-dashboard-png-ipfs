@@ -67,7 +67,6 @@ export default function CreatorPage() {
   const getUserBalanceForCoin = useCallback((coinAddress: string) => {
     return balanceUtils.getUserBalanceForCoin(coinAddress, zoraCoins);
   }, [zoraCoins, balanceUtils]);
-  
 
   // Fetch creator data using creator service
   useEffect(() => {

@@ -57,7 +57,6 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
             <Link href="/" onClick={() => {
-              console.log('Logo clicked, navigating to home');
               // Force navigation if Link doesn't work
               setTimeout(() => {
                 if (window.location.pathname !== '/') {

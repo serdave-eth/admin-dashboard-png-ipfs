@@ -34,7 +34,6 @@ export function FarcasterProvider({ children }: FarcasterProviderProps) {
         setIsReady(true);
         const context = await sdk.context;
         setSdkContext(context);
-        console.log('Farcaster miniapp SDK initialized');
       } catch (error) {
         console.error('Failed to initialize Farcaster SDK:', error);
         // Even if SDK fails, allow app to continue
