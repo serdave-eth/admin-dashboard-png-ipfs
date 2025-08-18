@@ -13,17 +13,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch wallet linking information from database
-    const walletLink = await prisma.$queryRaw<Array<{
-      zora_wallet_address: string;
-      linked_at: Date;
-    }>>`
-      SELECT zora_wallet_address, linked_at 
-      FROM wallet_links 
-      WHERE primary_wallet_address = ${primaryWalletAddress}
-    `;
+    // Fetch wallet linking information from database using Prisma ORM
+    const walletLink = await prisma.walletLink.findUnique({
+      where: { 
+        primaryWalletAddress: primaryWalletAddress 
+      },
+      select: {
+        zoraWalletAddress: true,
+        linkedAt: true
+      }
+    });
 
-    if (walletLink.length === 0) {
+    if (!walletLink) {
       return NextResponse.json({
         success: true,
         data: null
@@ -34,8 +35,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         primaryWallet: primaryWalletAddress,
-        zoraWallet: walletLink[0].zora_wallet_address,
-        linkedAt: walletLink[0].linked_at
+        zoraWallet: walletLink.zoraWalletAddress,
+        linkedAt: walletLink.linkedAt
       }
     });
   } catch (error) {
