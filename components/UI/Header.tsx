@@ -2,7 +2,6 @@
 
 import { usePrivy } from '@privy-io/react-auth';
 import { truncateAddress } from '@/lib/utils';
-import { useZoraLinking } from '@/lib/hooks/useZoraLinking';
 import { LogOut, Wallet, Copy, Check, ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -10,8 +9,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function Header() {
-  const { user, logout, authenticated, ready, login } = usePrivy();
-  const { zoraWallet, hasZoraLinked } = useZoraLinking();
+  const { user, logout, authenticated, ready, login, linkFarcaster } = usePrivy();
   const [copiedWallet, setCopiedWallet] = useState<'primary' | 'zora' | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -25,6 +23,11 @@ export default function Header() {
   const walletAddress = user?.wallet?.address || 
     user?.linkedAccounts?.find(account => account.type === 'wallet')?.address || 
     '';
+
+  // Check if Farcaster is linked and get profile info
+  const farcasterAccount = user?.linkedAccounts?.find(account => account.type === 'farcaster');
+  const hasFarcaster = !!farcasterAccount;
+  const farcasterProfile = user?.farcaster;
 
   const copyToClipboard = async (address: string, type: 'primary' | 'zora') => {
     try {
@@ -53,7 +56,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
-            <Link href="/" onClick={(e) => {
+            <Link href="/" onClick={() => {
               console.log('Logo clicked, navigating to home');
               // Force navigation if Link doesn't work
               setTimeout(() => {
@@ -94,10 +97,32 @@ export default function Header() {
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="flex items-center gap-2 bg-black px-4 py-2 rounded-full hover:bg-gray-800 transition-all duration-200 cursor-pointer"
                   >
-                    <Wallet className="w-4 h-4 text-white" />
-                    <span className="text-sm text-white font-bold">
-                      {truncateAddress(walletAddress)}
-                    </span>
+                    {farcasterProfile ? (
+                      <>
+                        {/* Farcaster Profile Picture */}
+                        {farcasterProfile.pfp ? (
+                          <img 
+                            src={farcasterProfile.pfp} 
+                            alt={farcasterProfile.username || 'Farcaster user'}
+                            className="w-6 h-6 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                            {(farcasterProfile.username || 'F')[0].toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-sm text-white font-bold">
+                          @{farcasterProfile.username || 'farcaster'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Wallet className="w-4 h-4 text-white" />
+                        <span className="text-sm text-white font-bold">
+                          {truncateAddress(walletAddress)}
+                        </span>
+                      </>
+                    )}
                     <ChevronDown className={`w-4 h-4 text-white transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -133,6 +158,20 @@ export default function Header() {
                         )}
                         Copy Address
                       </button>
+                      {!hasFarcaster && (
+                        <button
+                          onClick={() => {
+                            linkFarcaster();
+                            setDropdownOpen(false);
+                          }}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 transition-colors cursor-pointer"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                          </svg>
+                          Link Farcaster
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           logout();
