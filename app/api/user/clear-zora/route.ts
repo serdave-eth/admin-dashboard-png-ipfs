@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { verifyAuthToken } from '@/lib/auth';
+import { setCurrentUserWallet } from '@/lib/rls';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -13,7 +14,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Set RLS context for the authenticated user
+    await setCurrentUserWallet(prisma, primaryWalletAddress);
+
     // Clear Zora wallet linking from database using Prisma ORM
+    // RLS policy ensures only user's own wallet links can be deleted
     await prisma.walletLink.deleteMany({
       where: { 
         primaryWalletAddress: primaryWalletAddress 

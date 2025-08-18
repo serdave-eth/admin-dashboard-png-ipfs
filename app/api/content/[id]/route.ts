@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { verifyAuthToken } from '@/lib/auth';
+import { setCurrentUserWallet } from '@/lib/rls';
 
 export async function DELETE(
   request: NextRequest,
@@ -16,12 +17,17 @@ export async function DELETE(
       );
     }
 
+    // Set RLS context for the authenticated user
+    await setCurrentUserWallet(prisma, primaryWalletAddress);
+
     const { id: contentId } = await params;
 
     // Check if content exists and belongs to the authenticated user
+    // RLS policy will automatically filter to user's own content
     const content = await prisma.content.findFirst({
       where: {
         id: contentId,
+        // userWalletAddress filter now handled by RLS policy
         userWalletAddress: primaryWalletAddress
       }
     });
@@ -33,7 +39,7 @@ export async function DELETE(
       );
     }
 
-    // Delete the content
+    // Delete the content - RLS policy ensures only user's own content can be deleted
     await prisma.content.delete({
       where: {
         id: contentId

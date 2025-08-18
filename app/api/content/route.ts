@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { Content } from '@prisma/client';
 import { verifyAuthToken } from '@/lib/auth';
+import { setCurrentUserWallet } from '@/lib/rls';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,11 +15,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Set RLS context for the authenticated user
+    await setCurrentUserWallet(prisma, walletAddress);
+
     const searchParams = request.nextUrl.searchParams;
     const cursor = searchParams.get('cursor');
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     const where = {
+      // Note: userWalletAddress filter is now handled by RLS policy
+      // but keeping it for explicit filtering and better query optimization
       userWalletAddress: walletAddress,
       ...(cursor && {
         createdAt: {

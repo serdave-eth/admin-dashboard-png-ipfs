@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/database';
 import { verifyAuthToken } from '@/lib/auth';
+import { setCurrentUserWallet } from '@/lib/rls';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +13,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Set RLS context for the authenticated user
+    await setCurrentUserWallet(prisma, primaryWalletAddress);
 
     // Extract Zora wallet address from user's linked accounts
     const authHeader = request.headers.get('authorization');

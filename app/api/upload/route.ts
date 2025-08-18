@@ -4,6 +4,7 @@ import { prisma } from '@/lib/database';
 import { MAX_FILE_SIZE, ALLOWED_FILE_TYPES } from '@/types';
 import { verifyAuthToken } from '@/lib/auth';
 import { encryptBuffer, getEncryptionKey } from '@/lib/encryption';
+import { setCurrentUserWallet } from '@/lib/rls';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Set RLS context for the authenticated user
+    await setCurrentUserWallet(prisma, walletAddress);
 
     const formData = await request.formData();
     const file = formData.get('file') as File;

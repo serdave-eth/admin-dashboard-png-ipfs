@@ -1,10 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Optimized for Supabase and Vercel deployment
 generator client {
-  provider = "prisma-client-js"
-  // Enable edge runtime support for Vercel
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -14,15 +9,15 @@ datasource db {
 }
 
 model Content {
-  id                String   @id @default(cuid())
-  userWalletAddress String   @map("user_wallet_address")
-  filename          String
-  fileType          String   @map("file_type")
-  fileSize          BigInt   @map("file_size")
-  ipfsCid           String   @unique @map("ipfs_cid")
-  coinContractAddress String? @map("coin_contract_address")
-  minimumTokenAmount String? @map("minimum_token_amount")
-  createdAt         DateTime @default(now()) @map("created_at")
+  id                  String   @id @default(cuid())
+  userWalletAddress   String   @map("user_wallet_address")
+  filename            String
+  fileType            String   @map("file_type")
+  fileSize            BigInt   @map("file_size")
+  ipfsCid             String   @unique @map("ipfs_cid")
+  createdAt           DateTime @default(now()) @map("created_at")
+  coinContractAddress String?  @map("coin_contract_address")
+  minimumTokenAmount  String?  @map("minimum_token_amount")
 
   @@index([userWalletAddress])
   @@index([createdAt])
@@ -30,11 +25,11 @@ model Content {
 }
 
 model WalletLink {
-  id                    String   @id @default(cuid())
-  primaryWalletAddress  String   @unique @map("primary_wallet_address")
-  zoraWalletAddress     String?  @map("zora_wallet_address")
-  linkedAt              DateTime @default(now()) @map("linked_at")
-  
+  id                   String   @id @default(cuid())
+  primaryWalletAddress String   @unique @map("primary_wallet_address")
+  zoraWalletAddress    String?  @map("zora_wallet_address")
+  linkedAt             DateTime @default(now()) @map("linked_at")
+
   @@index([primaryWalletAddress])
   @@map("wallet_links")
 }
