@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { usePrivy, useCrossAppAccounts } from '@privy-io/react-auth';
+import { toast } from 'sonner';
 import { getProfileBalances } from '@zoralabs/coins-sdk';
 import { ethers } from 'ethers';
 
