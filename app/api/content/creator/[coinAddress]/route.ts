@@ -20,7 +20,8 @@ export async function GET(
     const cursor = searchParams.get('cursor');
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    const where = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {
       coin_contract_address: coinAddress,
       ...(cursor && {
         created_at: {
@@ -37,8 +38,9 @@ export async function GET(
       where,
       take: limit + 1,
       orderBy: {
-        created_at: 'desc',
-      },
+        created_at: 'desc' as const,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
     });
     
     // Re-enable RLS after the query

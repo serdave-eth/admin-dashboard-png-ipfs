@@ -6,19 +6,19 @@ export async function GET() {
     // Get distinct creators who have uploaded content
     const creatorsWithContent = await prisma.content.findMany({
       where: {
-        coinContractAddress: {
+        coin_contract_address: {
           not: null
         }
       },
       select: {
-        coinContractAddress: true
+        coin_contract_address: true
       },
-      distinct: ['coinContractAddress']
+      distinct: ['coin_contract_address']
     });
 
     // Extract unique addresses
     const creatorAddresses = creatorsWithContent
-      .map(item => item.coinContractAddress)
+      .map(item => item.coin_contract_address)
       .filter(Boolean) as string[];
 
     return NextResponse.json({ 

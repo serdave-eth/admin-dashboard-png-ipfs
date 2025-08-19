@@ -46,18 +46,6 @@ export default function ExplorePage() {
     }
   };
 
-  // Fetch content count for a creator
-  const fetchContentCount = async (coinAddress: string): Promise<number> => {
-    try {
-      const response = await fetch(`/api/content/creator/${coinAddress}?limit=1000`);
-      const data = await response.json();
-      return data.items?.length || 0;
-    } catch (error) {
-      console.error(`Failed to fetch content count for ${coinAddress}:`, error);
-      return 0;
-    }
-  };
-
   // Fetch real creator data from Zora API
   const fetchCreatorData = async () => {
     setLoading(true);
@@ -71,47 +59,65 @@ export default function ExplorePage() {
         return;
       }
 
-      const creatorPromises = targetAddresses.map(async (address) => {
-        try {
-          const response = await getCoin({ address });
-          const coin = response.data?.zora20Token;
-          
-          if (coin) {
-            // Fetch actual content count
-            const contentCount = await fetchContentCount(coin.address);
+      // Fetch all content counts in one request
+      let contentCounts: Record<string, number> = {};
+      try {
+        const countsResponse = await fetch('/api/content/creators/counts');
+        const countsData = await countsResponse.json();
+        contentCounts = countsData.counts || {};
+      } catch (error) {
+        console.error('Failed to fetch content counts:', error);
+      }
+
+      // Process in smaller batches to avoid overwhelming the API
+      const batchSize = 3;
+      const allCreators: Creator[] = [];
+      
+      for (let i = 0; i < targetAddresses.length; i += batchSize) {
+        const batch = targetAddresses.slice(i, i + batchSize);
+        const batchPromises = batch.map(async (address) => {
+          try {
+            const response = await getCoin({ address });
+            const coin = response.data?.zora20Token;
             
-            // Get user balance for this coin
-            const userCoin = zoraCoins.find(zc => 
-              zc.coin?.address?.toLowerCase() === coin.address?.toLowerCase()
-            );
-            const userBalance = userCoin?.balanceDecimal || 0;
+            if (coin) {
+              // Get content count from pre-fetched data
+              const contentCount = contentCounts[coin.address] || 0;
+              
+              // Get user balance for this coin
+              const userCoin = zoraCoins.find(zc => 
+                zc.coin?.address?.toLowerCase() === coin.address?.toLowerCase()
+              );
+              const userBalance = userCoin?.balanceDecimal || 0;
 
-            return {
-              id: coin.address,
-              name: coin.name || 'Unknown Creator',
-              symbol: coin.symbol || 'UNKNOWN',
-              address: coin.address,
-              marketCap: coin.marketCap || '0',
-              holders: coin.uniqueHolders || 0,
-              volume24h: coin.volume24h || '0',
-              marketCapDelta24h: '0', // Not available in API response
-              imageUrl: coin.mediaContent?.previewImage?.medium || 
-                       coin.mediaContent?.previewImage?.small || 
-                       `https://api.dicebear.com/7.x/identicon/svg?seed=${coin.name}&backgroundColor=b6e3f4`,
-              contentCount: contentCount, // Real content count from database
-              userBalance: userBalance, // Real user balance
-            };
+              return {
+                id: coin.address,
+                name: coin.name || 'Unknown Creator',
+                symbol: coin.symbol || 'UNKNOWN',
+                address: coin.address,
+                marketCap: coin.marketCap || '0',
+                holders: coin.uniqueHolders || 0,
+                volume24h: coin.volume24h || '0',
+                marketCapDelta24h: '0', // Not available in API response
+                imageUrl: coin.mediaContent?.previewImage?.medium || 
+                         coin.mediaContent?.previewImage?.small || 
+                         `https://api.dicebear.com/7.x/identicon/svg?seed=${coin.name}&backgroundColor=b6e3f4`,
+                contentCount: contentCount, // Real content count from database
+                userBalance: userBalance, // Real user balance
+              };
+            }
+            return null;
+          } catch (error) {
+            console.error(`Failed to fetch coin data for ${address}:`, error);
+            return null;
           }
-          return null;
-        } catch (error) {
-          console.error(`Failed to fetch coin data for ${address}:`, error);
-          return null;
-        }
-      });
+        });
+        
+        const batchResults = await Promise.all(batchPromises);
+        allCreators.push(...batchResults.filter(creator => creator !== null) as Creator[]);
+      }
 
-      const results = await Promise.all(creatorPromises);
-      const validCreators = results.filter(creator => creator !== null) as Creator[];
-      setCreators(validCreators);
+      setCreators(allCreators);
     } catch (error) {
       console.error('Failed to fetch creator data:', error);
       // Fallback to empty array on error
