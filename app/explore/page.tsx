@@ -29,12 +29,22 @@ export default function ExplorePage() {
   const { user, authenticated } = usePrivy();
   const { zoraCoins, hasZoraLinked, zoraWallet } = useZoraLinking();
 
-  // Specific Zora coin addresses to fetch
-  const targetAddresses = [
-    '0x024d3b7fb4917d030d097d76925a6c0531cd0623', // Serdave-eth
-    '0x7a0cc651e7b92b273b51c0dbc7db6056822f073b', // maariab
-    '0x0f04832da0070c834112209f7f4d56417869172d', // franklen
-  ];
+  // Fetch creator addresses from database
+  const fetchCreatorAddresses = async (): Promise<string[]> => {
+    try {
+      const response = await fetch('/api/content/creators');
+      const data = await response.json();
+      return data.creators || [];
+    } catch (error) {
+      console.error('Failed to fetch creator addresses:', error);
+      // Fallback to hardcoded addresses if API fails
+      return [
+        '0x024d3b7fb4917d030d097d76925a6c0531cd0623', // Serdave-eth
+        '0x7a0cc651e7b92b273b51c0dbc7db6056822f073b', // maariab
+        '0x0f04832da0070c834112209f7f4d56417869172d', // franklen
+      ];
+    }
+  };
 
   // Fetch content count for a creator
   const fetchContentCount = async (coinAddress: string): Promise<number> => {
@@ -52,6 +62,15 @@ export default function ExplorePage() {
   const fetchCreatorData = async () => {
     setLoading(true);
     try {
+      // First fetch the list of creators from our database
+      const targetAddresses = await fetchCreatorAddresses();
+      
+      if (targetAddresses.length === 0) {
+        setCreators([]);
+        setLoading(false);
+        return;
+      }
+
       const creatorPromises = targetAddresses.map(async (address) => {
         try {
           const response = await getCoin({ address });
