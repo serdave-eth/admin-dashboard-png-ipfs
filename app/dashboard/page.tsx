@@ -22,7 +22,9 @@ export default function Dashboard() {
     linkZora,
     isLinking,
     clearZoraLink,
-    isClearing 
+    isClearing,
+    unlinkZora,
+    isUnlinking 
   } = useZoraLinking();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeSection, setActiveSection] = useState<'creators' | 'supporters' | 'wallets'>('creators');
@@ -144,11 +146,13 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Content Section - Always show for authenticated users */}
-          <div className="mt-8 bg-white rounded-2xl p-6 border border-gray-200">
-            <h3 className="font-bold text-black mb-4">Your Content</h3>
-            <ContentFeed refreshTrigger={refreshTrigger} />
-          </div>
+          {/* Content Section - Only show when Zora is linked */}
+          {hasZoraLinked && zoraWallet?.smartWallet && (
+            <div className="mt-8 bg-white rounded-2xl p-6 border border-gray-200">
+              <h3 className="font-bold text-black mb-4">Your Content</h3>
+              <ContentFeed refreshTrigger={refreshTrigger} />
+            </div>
+          )}
         </>
       )}
     </div>
@@ -264,9 +268,13 @@ export default function Dashboard() {
               )}
             </div>
             {hasZoraLinked && zoraWallet?.smartWallet ? (
-              <span className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-bold flex-shrink-0 self-start sm:self-auto">
-                Connected
-              </span>
+              <button
+                onClick={unlinkZora}
+                disabled={isUnlinking}
+                className="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer flex-shrink-0 self-start sm:self-auto"
+              >
+                {isUnlinking ? 'Unlinking...' : 'Unlink'}
+              </button>
             ) : (
               <button
                 onClick={linkZora}

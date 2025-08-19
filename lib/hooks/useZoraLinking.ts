@@ -81,8 +81,10 @@ const CONTRACT_ABI = [
 export interface UseZoraLinkingReturn {
   linkZora: () => Promise<void>;
   clearZoraLink: () => Promise<void>;
+  unlinkZora: () => Promise<void>;
   isLinking: boolean;
   isClearing: boolean;
+  isUnlinking: boolean;
   error: string | null;
   zoraWallet: ZoraWallet | null;
   hasZoraLinked: boolean;
@@ -103,6 +105,7 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
   
   const [isLinking, setIsLinking] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isUnlinking, setIsUnlinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [storedZoraWallet, setStoredZoraWallet] = useState<string | null>(null);
   const [zoraCoins, setZoraCoins] = useState<CoinBalance[]>([]);
@@ -312,6 +315,81 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
     }
   }, [authenticated, getAccessToken]);
 
+  const unlinkZora = useCallback(async () => {
+    if (!authenticated || !user) {
+      setError('User must be authenticated to unlink Zora account');
+      return;
+    }
+
+    if (!hasZoraLinked) {
+      toast.info('No Zora account to unlink');
+      return;
+    }
+
+    setIsUnlinking(true);
+    setError(null);
+
+    try {
+      // Get the Zora account info from the user's linked accounts
+      const zoraAccountToUnlink = user.linkedAccounts.find(
+        (account) => account.type === 'cross_app'
+      );
+
+      if (!zoraAccountToUnlink) {
+        throw new Error('No Zora account found to unlink');
+      }
+
+      // Type assertion for cross_app account with providerApp
+      const crossAppAccount = zoraAccountToUnlink as typeof zoraAccountToUnlink & { 
+        providerApp?: { id?: string } 
+      };
+
+      if (!crossAppAccount.providerApp?.id) {
+        throw new Error('Invalid Zora account structure');
+      }
+
+      // Call our API endpoint to unlink the Zora account
+      const response = await fetch('/api/user/unlink-zora', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await getAccessToken()}`
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          handle: zoraAccountToUnlink.subject,
+          provider: `privy:${crossAppAccount.providerApp.id}`
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to unlink Zora account');
+      }
+
+      toast.success('Zora account unlinked successfully!');
+      
+      // Clear stored wallet data
+      setStoredZoraWallet(null);
+      setZoraCoins([]);
+      
+      // Force a page refresh to clear cached state
+      window.location.reload();
+    } catch (error: unknown) {
+      console.error('Unlink Zora error:', error);
+      
+      let errorMessage = 'Failed to unlink Zora account';
+      if (error instanceof Error && error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsUnlinking(false);
+    }
+  }, [authenticated, user, hasZoraLinked, getAccessToken]);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -494,8 +572,10 @@ export const useZoraLinking = (): UseZoraLinkingReturn => {
   return {
     linkZora,
     clearZoraLink,
+    unlinkZora,
     isLinking,
     isClearing,
+    isUnlinking,
     error,
     zoraWallet,
     hasZoraLinked,

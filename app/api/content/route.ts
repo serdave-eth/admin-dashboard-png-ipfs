@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     try {
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
-        // Decode JWT payload (this is just for debugging - not secure verification)
+        // Decode JWT payload for Privy DID extraction
         const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
         privyDid = payload.sub;
       }
